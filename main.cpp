@@ -42,8 +42,12 @@ void generate_hash_value(int k, string str, vector<int> &hash_value, vector<stri
         temp = str.substr(i,k);
         cout<<"\n temp  "<<temp;
         base_hash = random_hash(temp) % MAX_PRIME;
-        hash_value[0] = base_hash;
-        for( int j = 0; j < MAX_HASH_ALGO; j++) {
+        if(hash_value[0] > base_hash) {
+            hash_value[0] = base_hash;
+            hash_string[0] = temp;
+        }
+        cout<<" hash -- "<<base_hash;
+        for( int j = 1; j < MAX_HASH_ALGO; j++) {
             temp_hash = ( random_hash_vector[j] ^ base_hash) % MAX_PRIME;
             cout<<" hash -- "<<temp_hash;
             if(hash_value[j] > temp_hash) {
@@ -111,3 +115,4 @@ int main() {
     
     
 }
+
