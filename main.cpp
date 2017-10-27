@@ -2,11 +2,38 @@
 #include <vector>
 #include <fstream>
 #include <time.h>
+#include <unordered_set>
 
 #define MAX_PRIME 9999999999971
 #define MAX_HASH_ALGO 5
 
 using namespace std;
+
+float jaccard_similarity(vector<int> & read1, vector<int>& read2){
+    unordered_set<int> set1, set2;
+    float common = 0, total = 0;
+    float jaccard;
+    
+    for(int i = 0; i < read1.size(); i++){
+        set1.insert(read1[i]);
+    }
+    
+    for(int j = 0; j < read2.size(); j++){
+        set2.insert(read2[j]);
+    }
+    total = set1.size();
+    
+    for(auto it = set2.begin(); it != set2.end(); it++){
+        if(set1.find(*it) != set1.end())
+            common++;
+        else
+            total++;
+    }
+    cout << common << " " << total <<"\n";
+    jaccard = common/total;
+    return jaccard;
+}
+
 
 // https://stackoverflow.com/questions/15518418/whats-behind-the-hashcode-method-for-string-in-java
 int random_hash(string str) {
@@ -64,24 +91,24 @@ int main() {
     int n;
     ifstream file ("dataset.txt");
     
-     if (file.is_open()) {
-         getline(file, tmp);
-         while(getline(file, tmp)) {
-             if(tmp[0] != '>') {
-                 input += tmp;
-             }
-             else {
-                 strings.push_back(input);
-                 input = "";
-             }
-         }
-     } else {
-         cout<<"\n Unable to open file";
-     }
-     file.close();
+    if (file.is_open()) {
+        getline(file, tmp);
+        while(getline(file, tmp)) {
+            if(tmp[0] != '>') {
+                input += tmp;
+            }
+            else {
+                strings.push_back(input);
+                input = "";
+            }
+        }
+    } else {
+        cout<<"\n Unable to open file";
+    }
+    file.close();
     
     strings.push_back(input);
-
+    
     n = int(strings.size());
     generate_rest_random_hash();
     for(int i = 0; i < n; i++) {
@@ -90,7 +117,7 @@ int main() {
         hash_values.push_back(tmp);
         hash_strings.push_back(temp_str);
         generate_hash_value(3, strings[i], hash_values[i], hash_strings[i]);
-
+        
         cout<<"-------------\n";
         for(int j = 0; j<MAX_HASH_ALGO; j++) {
             cout<<hash_values[i][j]<<" => ";
@@ -98,4 +125,13 @@ int main() {
         }
     }
     
+    for(int k = 0; k < hash_values.size()-1; k++){
+        for(int l = k+1; l < hash_values.size(); l++){
+            cout << "Jaccard similarity between " << k << " and " << l << " is: ";
+            cout << jaccard_similarity(hash_values[k], hash_values[l]);
+            cout << "\n";
+        }
+    }
+    
 }
+
