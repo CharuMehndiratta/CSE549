@@ -3,7 +3,7 @@
 #include <fstream>
 #include <time.h>
 
-#define MAX_PRIME 97
+#define MAX_PRIME 9999999999971
 #define MAX_HASH_ALGO 5
 
 using namespace std;
@@ -20,7 +20,7 @@ int random_hash(string str) {
 }
 
 vector<int> random_hash_vector;
-void generate_random_hash() {
+void generate_rest_random_hash() {
     srand (time(NULL));
     for(int i=0;i<MAX_HASH_ALGO;i++) {
         cout<<"\n rand -- "<<rand();
@@ -28,15 +28,12 @@ void generate_random_hash() {
     }
     
 }
-\
+
 void generate_hash_value(int k, string str, vector<int> &hash_value, vector<string> &hash_string) {
     
     int base_hash, temp_hash;
     string temp;
-    
     cout<<"\n input  "<<str;
-    
-    
     cout<<"\n";
     for (int i = 0; i <= str.size()-k; i++) {
         temp = str.substr(i,k);
@@ -60,49 +57,40 @@ void generate_hash_value(int k, string str, vector<int> &hash_value, vector<stri
 
 
 int main() {
-    
-    string first, second;
-    // ifstream file ("rosalind_dataset.txt");
-    
-    // if (file.is_open()) {
-    //     getline(file, input);
-    //     while(getline(file, input) && input[0] != '>') {
-    //         first += input;
-    //     }
-    //     while(getline(file, input)) {
-    //         second += input;
-    //     }
-    // } else {
-    //     cout<<"\n Unable to open file";
-    // }
-    // file.close();
-    
-    first = "CATGGACCGACCAG";
-    second = "GCAGTACCGATCGT";
-    int n = 2;
-    
+    string input = "", tmp;
     vector < vector<int> > hash_values;
     vector < vector<string> > hash_strings;
     vector < string > strings;
+    int n;
+    ifstream file ("dataset.txt");
     
-    // for (int i = 0; i < n; i++) {
-    //     strings[i].push_back()
-    // }
+     if (file.is_open()) {
+         getline(file, tmp);
+         while(getline(file, tmp)) {
+             if(tmp[0] != '>') {
+                 input += tmp;
+             }
+             else {
+                 strings.push_back(input);
+                 input = "";
+             }
+         }
+     } else {
+         cout<<"\n Unable to open file";
+     }
+     file.close();
     
-    strings.push_back(first);
-    strings.push_back(second);
-    
-    cout<<"\n frist "<<strings[0];
-    cout<<"\n sec "<<strings[1];
-    
-    generate_random_hash();
+    strings.push_back(input);
+
+    n = int(strings.size());
+    generate_rest_random_hash();
     for(int i = 0; i < n; i++) {
         vector<int> tmp(200, INT_MAX);
         vector<string> temp_str(200);
         hash_values.push_back(tmp);
         hash_strings.push_back(temp_str);
         generate_hash_value(3, strings[i], hash_values[i], hash_strings[i]);
-        
+
         cout<<"-------------\n";
         for(int j = 0; j<MAX_HASH_ALGO; j++) {
             cout<<hash_values[i][j]<<" => ";
@@ -110,9 +98,4 @@ int main() {
         }
     }
     
-    
-    
-    
-    
 }
-

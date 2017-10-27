@@ -1,0 +1,7 @@
+>Rosalind_9873
+CATGGACCGA
+CCAG
+>Rosalind_8969
+GCAGTACCGA
+TCGT
+
