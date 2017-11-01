@@ -6,7 +6,8 @@
 #include "MurmurHash3.h"
 #include <string>
 
-#define MAX_HASH_ALGO 200
+#define MAX_HASH_ALGO 5
+#define MAX_HASH_SIZE 10000000000
 
 using namespace std;
 
@@ -52,7 +53,7 @@ void generate_rest_random_hash() {
 
 void generate_hash_value(int k, string str, vector<uint64_t> &hash_value, vector<string> &hash_string) {
     
-    uint64_t hash_otpt[2];
+    uint64_t hash_otpt[2], temp_hash;
     string temp;
     cout<<"\n input  "<<str;
     cout<<"\n";
@@ -62,9 +63,11 @@ void generate_hash_value(int k, string str, vector<uint64_t> &hash_value, vector
         cout<<"\n key - "<<temp;
         for( int j = 0; j < MAX_HASH_ALGO; j++) {
             MurmurHash3_x64_128(key, (uint64_t)strlen(key), random_hash_vector[j], hash_otpt);
-            cout<<" temp_hash "<<hash_otpt[0];
-            if(hash_value[j] > hash_otpt[0]) {
-                hash_value[j] = hash_otpt[0];
+            temp_hash = (hash_otpt[0] +  MAX_HASH_ALGO * hash_otpt[1]) % MAX_HASH_SIZE;
+            cout<<" temp_hash "<<temp_hash;
+
+            if(hash_value[j] > temp_hash) {
+                hash_value[j] = temp_hash;
                 hash_string[j] = temp;
             }
         }
