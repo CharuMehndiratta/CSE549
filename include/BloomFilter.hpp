@@ -10,7 +10,8 @@
  * Copyright notice:                                                 *
  * Free use of the Open Bloom Filter Library is permitted under the  *
  * guidelines and in accordance with the MIT License.                *
- * http://www.opensource.org/licenses/MIT                            *
+ * http://www.opensource.org/licenses/MIT    
+ * https://github.com/ArashPartow/bloom                        *
  *                                                                   *
  *********************************************************************
 */
