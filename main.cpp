@@ -2,11 +2,14 @@
 #include <vector>
 #include <fstream>
 #include <time.h>
-#include "MurmurHash3.h"
 #include <string>
+#include <cmath>
+#include "MurmurHash3.h"
+#include "BloomFilter.hpp"
 
-#define MAX_HASH_ALGO 5
-#define MAX_HASH_SIZE 1000000000
+#define MAX_HASH_ALGO 10
+#define MAX_HASH_SIZE 10000000000
+#define FALSE_POSTIVITY 0.01
 
 using namespace std;
 
@@ -44,8 +47,8 @@ void generate_hash_value(int k, string str, vector<uint64_t> &hash_value, vector
     string temp;
     cout<<"\n input  "<<str;
     cout<<"\n";
-    for (int i = 0; i <= str.size()-k; i++) {
-        temp = str.substr(i,k);
+    for (int i = 0; i <= str.size() - k; i++) {
+        temp = str.substr(i, k);
         const char *key = temp.c_str();
         cout<<"\n key - "<<temp;
         for( int j = 0; j < MAX_HASH_ALGO; j++) {
@@ -63,12 +66,14 @@ void generate_hash_value(int k, string str, vector<uint64_t> &hash_value, vector
 
 
 int main() {
+    srand (time(NULL));
     string input = "", tmp;
     vector < vector<uint64_t> > hash_values;
     vector < vector<string> > hash_strings;
     vector < string > strings;
     int n;
     ifstream file ("dataset.txt");
+    int kmerSize = 3;
     
     if (file.is_open()) {
         getline(file, tmp);
@@ -95,7 +100,7 @@ int main() {
         vector<string> temp_str(MAX_HASH_ALGO);
         hash_values.push_back(tmp);
         hash_strings.push_back(temp_str);
-        generate_hash_value(3, strings[i], hash_values[i], hash_strings[i]);
+        generate_hash_value(kmerSize, strings[i], hash_values[i], hash_strings[i]);
         
         cout<<"\n-------------\n";
         for(int j = 0; j < MAX_HASH_ALGO; j++) {
@@ -106,10 +111,55 @@ int main() {
     
     for(int k = 0; k < hash_values.size()-1; k++){
         for(int l = k + 1; l < hash_values.size(); l++){
-            cout << "\nJaccard similarity between index " << k << " and index " << l << " is: ";
+            cout << "\nJaccard similarity between index " << k << " and index " << l << " using min hash approach is: ";
             cout << jaccard_similarity(hash_values[k], hash_values[l]);
             cout << "\n";
         }
     }
     
+    int capacity = 1.15 * strings[0].size();
+
+    bloom_parameters parameters;
+
+    // How many elements roughly do we expect to insert?
+    parameters.projected_element_count = capacity;
+
+    // Maximum tolerable false positive probability? (0,1)
+    parameters.false_positive_probability = FALSE_POSTIVITY ;
+
+    // Simple randomizer (optional)
+    parameters.random_seed = random_hash_vector[rand() % MAX_HASH_ALGO];
+    cout<<"\n parameters.random_seed  "<<parameters.random_seed ;
+
+    if (!parameters) {
+      cout << "Error - Invalid set of bloom filter parameters!";
+      return 1;
+    }
+    parameters.compute_optimal_parameters();
+    bloom_filter filter(parameters);
+    string temp;
+    int size_B_est = 0; // String 0
+    int size_A = 0; // String 1
+
+    //Inserting String 0 in Bloom Filter
+    for (int i = 0; i <= strings[0].size() - kmerSize; i++) {
+        temp = strings[0].substr(i, kmerSize);
+        filter.insert(temp);
+        size_B_est++;
+    }
+
+    int int_est = 0;
+    for (int i = 0; i <= strings[1].size() - kmerSize; i++) {
+        temp = strings[1].substr(i, kmerSize);
+        if(filter.contains(temp)) {
+            int_est++;
+        }
+        size_A++;
+    }
+
+    int_est -= floor(FALSE_POSTIVITY * MAX_HASH_ALGO);  // adjust for the false positive rate
+    float containment_est = int_est / float(MAX_HASH_ALGO);  //estimate of the containment index
+    float jaccard_est = (size_A * containment_est) / (size_A + size_B_est - (size_A * containment_est));
+    cout << "\nJaccard similarity between index using containment hash approach is: "<<jaccard_est<<"\n";
+
 }
