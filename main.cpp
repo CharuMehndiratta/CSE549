@@ -7,9 +7,9 @@
 #include "MurmurHash3.h"
 #include "BloomFilter.hpp"
 
-#define MAX_HASH_ALGO 10
+#define MAX_HASH_ALGO 200
 #define MAX_HASH_SIZE 10000000000
-#define FALSE_POSTIVITY 0.01
+#define FALSE_POSTIVITY 0.001
 
 using namespace std;
 
@@ -34,8 +34,8 @@ void generate_rest_random_hash() {
     srand (time(NULL));
     for (int i = 0; i < MAX_HASH_ALGO; i++) {
         int x = rand();
-        cout<<"\n rand -- "<<x;
-        random_hash_vector.push_back(x);
+        cout<<"\n rand -- "<<i;
+        random_hash_vector.push_back(i);
     }
 
 }
@@ -117,7 +117,7 @@ int main() {
         }
     }
     
-    int capacity = 1.15 * strings[0].size();
+    int capacity = 2 * strings[0].size();
 
     bloom_parameters parameters;
 
@@ -128,7 +128,7 @@ int main() {
     parameters.false_positive_probability = FALSE_POSTIVITY ;
 
     // Simple randomizer (optional)
-    parameters.random_seed = random_hash_vector[rand() % MAX_HASH_ALGO];
+    parameters.random_seed = rand();
     cout<<"\n parameters.random_seed  "<<parameters.random_seed ;
 
     if (!parameters) {
@@ -157,9 +157,9 @@ int main() {
         size_A++;
     }
 
-    int_est -= floor(FALSE_POSTIVITY * MAX_HASH_ALGO);  // adjust for the false positive rate
-    float containment_est = int_est / float(MAX_HASH_ALGO);  //estimate of the containment index
-    float jaccard_est = (size_A * containment_est) / (size_A + size_B_est - (size_A * containment_est));
+    int_est -= floor(FALSE_POSTIVITY * 10);  // adjust for the false positive rate
+    float containment_est = int_est / float(10);  //estimate of the containment index
+    float jaccard_est = (size_A * containment_est) / (float)(size_A + size_B_est - (size_A * containment_est));
     cout << "\nJaccard similarity between index using containment hash approach is: "<<jaccard_est<<"\n";
 
 }
