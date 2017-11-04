@@ -25,6 +25,7 @@ float jaccard_similarity(vector<uint64_t> & read1, vector<uint64_t>& read2){
 
    // cout << common << " / " << total <<"\n";
     jaccard = common/total;
+    cout << jaccard << "  ";
     return jaccard;
 }
 
@@ -85,7 +86,7 @@ int main() {
     cout << "\n";
 
     /*************************************************************/
-    /* Read the long_reads from file	 			 */
+    /* Read the long_reads from file	 			             */
     /*************************************************************/
     ifstream file ("long_reads.txt");
     if (file.is_open()) {
@@ -106,7 +107,7 @@ int main() {
     file.close();
     
     /*************************************************************/
-    /* Read the references from file	 			 */
+    /* Read the references from file	 			             */
     /*************************************************************/
     tmp = "";
     input = "";
@@ -156,59 +157,60 @@ int main() {
     }
     
     /*************************************************************/
-    /* Generate Jaccard similarity between long reads		 */
-    /* and references using min_hash			 	 */
+    /* Generate Jaccard similarity between long reads		     */
+    /* and references using min_hash			 	             */
     /*************************************************************/
     for(int k = 0; k < hash_references.size(); k++){
         for(int l = 0; l < hash_reads.size(); l++){
 	    min_hash_jaccard.push_back(jaccard_similarity(hash_references[k], hash_reads[l]));
-            //cout << min_hash_jaccard.back();
+        //cout << min_hash_jaccard.back();
         }
     }
 
     /*************************************************************/
-    /* Generate Jaccard similarity between long reads		 */
-    /* and references using containment_hash		 	 */
+    /* Generate Jaccard similarity between long reads		     */
+    /* and references using containment_hash		 	         */
     /*************************************************************/
     for(int i = 0; i < references.size(); i++){
 	
-	int capacity = 2 * references[i].size();
-	bloom_parameters parameters;
+        int capacity = 2 * references[i].size();
+        bloom_parameters parameters;
     
-	// How many elements roughly do we expect to insert?
+        // How many elements roughly do we expect to insert?
         parameters.projected_element_count = capacity;
 
         // Maximum tolerable false positive probability? (0,1)
         parameters.false_positive_probability = FALSE_POSTIVITY;
 
-	// Simple randomizer (optional)
+        // Simple randomizer (optional)
         parameters.random_seed = rand();
 
-	//cout<<"\n parameters.random_seed  "<<parameters.random_seed ;
+        //cout<<"\n parameters.random_seed  "<<parameters.random_seed ;
         if (!parameters) {
-           cout << "Error - Invalid set of bloom filter parameters!";
-           return 1;
-         }
+            cout << "Error - Invalid set of bloom filter parameters!";
+            return 1;
+        }
 
-         parameters.compute_optimal_parameters();
-         bloom_filter filter(parameters);
+        parameters.compute_optimal_parameters();
+        bloom_filter filter(parameters);
 
-	 string temp;
-         int size_B_est = 0; // String 0
-         int size_A = 0; // String 1
+        string temp;
+        int size_B_est = 0; // String 0
+        int size_A = 0; // String 1
 
-         //Inserting references[i] in Bloom Filter
-         for (int j = 0; j <= references[i].size() - kmerSize; j++) {
-             temp = references[i].substr(j, kmerSize);
-	     if(!filter.contains(temp)){
-		filter.insert(temp);
-		size_B_est++;
-	     }
-          } 
-         int int_est = 0;
-	 for(int k = 0; k < long_reads.size(); k++){
+        //Inserting references[i] in Bloom Filter
+        for (int j = 0; j <= references[i].size() - kmerSize; j++) {
+            temp = references[i].substr(j, kmerSize);
+            if(!filter.contains(temp)){
+                filter.insert(temp);
+                size_B_est++;
+            }
+        }
+        
+        int int_est = 0;
+        for(int k = 0; k < long_reads.size(); k++){
 	 	
-	 	unordered_set<string> read_set;
+            unordered_set<string> read_set;
          	for (int l = 0; l <= long_reads[k].size() - kmerSize; l++) {
              	  temp = long_reads[k].substr(l, kmerSize);
                   if(filter.contains(temp)) {
@@ -217,51 +219,53 @@ int main() {
                    read_set.insert(temp);
                 }
 
-		size_A = read_set.size();
+            size_A = read_set.size();
          	int_est -= floor(FALSE_POSTIVITY * 10);  // adjust for the false positive rate
 	        float containment_est = int_est / float(10);  //estimate of the containment index
        		float jaccard_est = (size_A * containment_est) / (float)(size_A + size_B_est - (size_A * containment_est));
-		con_hash_jaccard.push_back(jaccard_est);
-		//cout <<  con_hash_jaccard.back();
+            con_hash_jaccard.push_back(jaccard_est);
+            //cout <<  con_hash_jaccard.back();
       	 }   	
      }
 
     /*************************************************************/
-    /* Generate true Jaccard similarity between long reads	 */
-    /* and references using conventional method		 	 */
+    /* Generate true Jaccard similarity between long reads	     */
+    /* and references using conventional method		 	         */
     /*************************************************************/
 
     for(int i = 0; i < references.size(); i++){
-	unordered_set<string> ref_kmers;
-	for(int j = 0; j < references[i].size() - kmerSize; j++){
-	  string  temp = references[i].substr(j, kmerSize);
-	  ref_kmers.insert(temp);
-	}
-	for(int k = 0; k < long_reads.size(); k++){
-	  unordered_set<string> read_kmers;
-	  for(int l = 0; l < long_reads[k].size() - kmerSize; l++){
-		string tmp =  long_reads[k].substr(l, kmerSize);
-		read_kmers.insert(tmp);
-	  }
-	  float un = ref_kmers.size();
-	  float intr = 0;
-	  for(auto it = read_kmers.begin(); it != read_kmers.end(); it++){
-		if(ref_kmers.find(*it) != ref_kmers.end())
-			intr++;
-		else
-			un++;
-	  }
-	  true_jaccard.push_back(intr/un);
-	}
+        unordered_set<string> ref_kmers;
+        for(int j = 0; j < references[i].size() - kmerSize; j++){
+            string  temp = references[i].substr(j, kmerSize);
+            ref_kmers.insert(temp);
+        }
+        for(int k = 0; k < long_reads.size(); k++){
+            unordered_set<string> read_kmers;
+            for(int l = 0; l < long_reads[k].size() - kmerSize; l++){
+                string tmp =  long_reads[k].substr(l, kmerSize);
+                read_kmers.insert(tmp);
+            }
+            
+            float un = ref_kmers.size();
+            float intr = 0;
+            
+            for(auto it = read_kmers.begin(); it != read_kmers.end(); it++){
+                if(ref_kmers.find(*it) != ref_kmers.end())
+                    intr++;
+                else
+                    un++;
+            }
+            true_jaccard.push_back(intr/un);
+        }
     }
 
     cout << "\n";
     cout << "Reference Idx \t" << "Long Read Idx \t" << "Min_Hash  \t" << "Containment_Hash \t" << "True Jaccard\n";
     int len = 0;
     for(int i = 0; i < references.size(); i++){
-	for(int j = 0; j < long_reads.size(); j++){
-		cout << i << "\t\t" << j << "\t\t" << min_hash_jaccard[len] << "\t\t" << con_hash_jaccard[len] << "\t\t" << true_jaccard[len] << "\n";
-		n++;
-	}	
+        for(int j = 0; j < long_reads.size(); j++){
+            cout << i << "\t\t" << j << "\t\t" << min_hash_jaccard[len] << "\t\t" << con_hash_jaccard[len] << "\t\t" << true_jaccard[len] << "\n";
+            len++;
+        }
     }
 }	
