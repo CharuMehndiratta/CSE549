@@ -200,18 +200,24 @@ int main() {
          //Inserting references[i] in Bloom Filter
          for (int j = 0; j <= references[i].size() - kmerSize; j++) {
              temp = references[i].substr(j, kmerSize);
-             filter.insert(temp);
-             size_B_est++;
+	     if(!filter.contains(temp)){
+		filter.insert(temp);
+		size_B_est++;
+	     }
           } 
          int int_est = 0;
 	 for(int k = 0; k < long_reads.size(); k++){
+	 	
+	 	unordered_set<string> read_set;
          	for (int l = 0; l <= long_reads[k].size() - kmerSize; l++) {
              	  temp = long_reads[k].substr(l, kmerSize);
                   if(filter.contains(temp)) {
                       int_est++;
                    }
-                   size_A++;
+                   read_set.insert(temp);
                 }
+
+		size_A = read_set.size();
          	int_est -= floor(FALSE_POSTIVITY * 10);  // adjust for the false positive rate
 	        float containment_est = int_est / float(10);  //estimate of the containment index
        		float jaccard_est = (size_A * containment_est) / (float)(size_A + size_B_est - (size_A * containment_est));
