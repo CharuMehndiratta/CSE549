@@ -208,6 +208,7 @@ int main() {
         }
         
         int int_est = 0;
+        int hash_value;
         for(int k = 0; k < long_reads.size(); k++){
 	 	
             unordered_set<string> read_set;
@@ -219,9 +220,10 @@ int main() {
                    read_set.insert(temp);
                 }
 
+            hash_value = references[i].size()/long_reads[k].size();
             size_A = read_set.size();
-         	int_est -= floor(FALSE_POSTIVITY * 10);  // adjust for the false positive rate
-	        float containment_est = int_est / float(10);  //estimate of the containment index
+         	int_est -= floor(FALSE_POSTIVITY * hash_value);  // adjust for the false positive rate
+	        float containment_est = int_est / float(hash_value);  //estimate of the containment index
        		float jaccard_est = (size_A * containment_est) / (float)(size_A + size_B_est - (size_A * containment_est));
             con_hash_jaccard.push_back(jaccard_est);
             //cout <<  con_hash_jaccard.back();
