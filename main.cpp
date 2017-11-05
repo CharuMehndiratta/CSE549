@@ -266,6 +266,7 @@ int main() {
         }
         for(int k = 0; k < long_reads.size(); k++){
             unordered_set<string> read_kmers;
+            unordered_set<string> ::iterator it;
             for(int l = 0; l < long_reads[k].size() - kmerSize; l++){
                 string tmp =  long_reads[k].substr(l, kmerSize);
                 read_kmers.insert(tmp);
@@ -274,7 +275,7 @@ int main() {
             float un = ref_kmers.size();
             float intr = 0;
             
-            for(auto it = read_kmers.begin(); it != read_kmers.end(); it++){
+            for(it = read_kmers.begin(); it != read_kmers.end(); it++){
                 if(ref_kmers.find(*it) != ref_kmers.end())
                     intr++;
                 else
