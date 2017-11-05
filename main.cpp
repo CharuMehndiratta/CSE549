@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <iomanip>
 #include "MurmurHash3.h"
 #include "BloomFilter.hpp"
 
@@ -243,14 +244,16 @@ void sequences_similarity(vector <string> sequences1, vector <string> sequences2
     cin >> kmer_size;
     generate_seeds();
 
+    cout << "Sequence 1\tSequence 2\tMin hash jaccard estimate\tContainment hash jaccard estimate\tTrue jaccard similarity\n";
     for (int i = 0; i < n1; i++) {
         for (int j = 0; j < n2; j++) {
             min_hash_jaccard = min_hash(sequences1[i], sequences2[j], kmer_size);
             containment_hash_jaccard = containment_hash(sequences1[i], sequences2[j], kmer_size);
             jaccard_similarity = true_jaccard_similarity(sequences1[i], sequences2[j], kmer_size);
-            cout << "Min hash jaccard estimate: " << min_hash_jaccard << endl;
-            cout << "Containment hash jaccard estimate: " << containment_hash_jaccard << endl;
-            cout << "True jaccard similarity: " << jaccard_similarity << endl;
+            cout << setw(5) << i << setw(15) << j << setw(25);
+            cout << min_hash_jaccard << setw(35);
+            cout << containment_hash_jaccard << setw(35);
+            cout << jaccard_similarity << endl;
         }
     }
 }
