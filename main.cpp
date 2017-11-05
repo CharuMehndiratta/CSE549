@@ -56,12 +56,15 @@ vector<uint64_t> generate_sketch(vector <string> shingles) {
 
     for (int i = 0; i < NUM_HASH; i++) {
         uint64_t min_mer = LLONG_MAX;
+        cout << "Hash "<< i << ":\n---------------\n";
         for (int j = 0; j < num_shingles; j++) {
             uint64_t hash_value = get_integer_fingerprint(shingles[j], i);
             if (hash_value < min_mer) {
                 min_mer = hash_value;
             }
+            cout << shingles[j] << " : " << hash_value << "\n";
         }
+        cout << "Min-mer : " << min_mer << "\n\n";
         sketch.push_back(min_mer);
     }
 
@@ -93,6 +96,23 @@ vector<string> read_dataset() {
     return sequences;
 }
 
+void print_sketch(vector <uint64_t> sketch) {
+    int size = sketch.size();
+    for (int i = 0; i < size; i++) {
+        if (i == 0) {
+            cout << "[ ";
+        }
+        cout << sketch[i];
+
+        if (i == size - 1) {
+            cout << " ]";
+        } else {
+            cout << ", ";
+        }
+    }
+    cout << "\n";
+}
+
 void min_hash(string sequence1, string sequence2) {
     int k;
     double jaccard_index;
@@ -108,6 +128,11 @@ void min_hash(string sequence1, string sequence2) {
 
     shingles2 = generate_shingles(sequence2, k);
     sketch2   = generate_sketch(shingles2);
+
+    cout << "Sketch 1: ";
+    print_sketch(sketch1);
+    cout << "Sketch 2: ";
+    print_sketch(sketch2);
 
     jaccard_index = jaccard_similarity(sketch1, sketch2);
 
