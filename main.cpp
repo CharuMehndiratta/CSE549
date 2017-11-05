@@ -13,7 +13,38 @@ using namespace std;
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
 vector<uint64_t> seeds;
 
-double jaccard_similarity(vector <uint64_t> sketch1, vector <uint64_t> sketch2){
+vector<string> generate_shingles(string sequence, int k) {
+    int size = sequence.size();
+    vector <string> shingles;
+
+    for (int i = 0; i <= size - k; i++) {
+        shingles.push_back(sequence.substr(i, k));
+    }
+
+    return shingles;
+}
+
+double true_jaccard_similarity(string sequence1, string sequence2, int kmer_size) {
+    int s1 = sequence1.size(), s2 = sequence2.size();
+    vector <string> shingles1, shingles2, v;
+
+    shingles1 = generate_shingles(sequence1, kmer_size);
+    shingles2 = generate_shingles(sequence2, kmer_size);
+
+    sort(shingles1.begin(), shingles1.end());
+    sort(shingles2.begin(), shingles2.end());
+
+    set_intersection(shingles1.begin(), shingles1.end(), shingles2.begin(), shingles2.end(), back_inserter(v));
+    int num_intersection = v.size();
+
+    v.clear();
+    set_union(shingles1.begin(), shingles1.end(), shingles2.begin(), shingles2.end(), back_inserter(v));
+    int num_union = v.size();
+
+    return ((double)num_intersection) / num_union;
+}
+
+double min_hash_jaccard_estimate(vector <uint64_t> sketch1, vector <uint64_t> sketch2){
     int sketch_size = sketch1.size(), common = 0;
 
     for (int i = 0; i < sketch1.size(); i++) {
@@ -23,6 +54,24 @@ double jaccard_similarity(vector <uint64_t> sketch1, vector <uint64_t> sketch2){
     }
 
     return ((double)common / sketch_size);
+}
+
+double containment_jaccard_estimate(string sequence1, string sequence2, vector <string> sketch2, bloom_filter filter, int kmer_size) {
+    int intersections = 0;
+    int sketch_size = sketch2.size();
+    for (int i = 0; i < sketch_size; i++) {
+        if (filter.contains(sketch2[i])) {
+            intersections++;
+        }
+    }
+    intersections -= FALSE_POSITIVE * sketch_size;
+
+    double containment_estimate = ((double)intersections / sketch_size);
+
+    int size_sequence1_set = sequence1.size() - kmer_size + 1;
+    int size_sequence2_set = sequence2.size() - kmer_size + 1;
+
+    return ((double)(containment_estimate * size_sequence2_set)) / (size_sequence1_set + size_sequence2_set - size_sequence2_set * containment_estimate);
 }
 
 void generate_seeds() {
@@ -41,32 +90,21 @@ uint64_t get_integer_fingerprint(string shingle, int hash_num) {
     return (hash_output[0] +  NUM_HASH * hash_output[1]) % LARGE_PRIME;
 }
 
-vector<string> generate_shingles(string sequence, int k) {
-    int size = sequence.size();
-    vector <string> shingles;
-
-    for (int i = 0; i <= size - k; i++) {
-        shingles.push_back(sequence.substr(i, k));
-    }
-
-    return shingles;
-}
-
 vector<uint64_t> generate_sketch(vector <string> shingles) {
     int num_shingles = shingles.size();
     vector <uint64_t> sketch;
 
     for (int i = 0; i < NUM_HASH; i++) {
         uint64_t min_mer = LLONG_MAX;
-        cout << "Hash "<< i << ":\n---------------\n";
+        // cout << "Hash "<< i << ":\n---------------\n";
         for (int j = 0; j < num_shingles; j++) {
             uint64_t hash_value = get_integer_fingerprint(shingles[j], i);
             if (hash_value < min_mer) {
                 min_mer = hash_value;
             }
-            cout << shingles[j] << " : " << hash_value << "\n";
+            // cout << shingles[j] << " : " << hash_value << "\n";
         }
-        cout << "Min-mer : " << min_mer << "\n\n";
+        // cout << "Min-mer : " << min_mer << "\n\n";
         sketch.push_back(min_mer);
     }
 
@@ -146,16 +184,12 @@ double min_hash(string sequence1, string sequence2, int k) {
     shingles2 = generate_shingles(sequence2, k);
     sketch2   = generate_sketch(shingles2);
 
-    cout << "Sketch 1: ";
-    print_sketch(sketch1);
-    cout << "Sketch 2: ";
-    print_sketch(sketch2);
+    // cout << "Sketch 1: ";
+    // print_sketch(sketch1);
+    // cout << "Sketch 2: ";
+    // print_sketch(sketch2);
 
-    // jaccard_index = jaccard_similarity(sketch1, sketch2);
-
-    return jaccard_similarity(sketch1, sketch2);
-
-    // cout << "Jaccard index: " << jaccard_index;
+    return min_hash_jaccard_estimate(sketch1, sketch2);
 }
 
 double containment_hash(string sequence1, string sequence2, int kmer_size) {
@@ -167,7 +201,6 @@ double containment_hash(string sequence1, string sequence2, int kmer_size) {
 
     bloom_parameters parameters;
     int s1 = sequence1.size();
-    int s2 = sequence2.size();
 
     // How many elements roughly do we expect to insert?
     parameters.projected_element_count = s1 - kmer_size + 1; // Number of k mers
@@ -199,27 +232,12 @@ double containment_hash(string sequence1, string sequence2, int kmer_size) {
     shingles2 = generate_shingles(sequence2, kmer_size);
     sketch2   = generate_kmer_sketch(shingles2);
 
-    int intersections = 0;
-    for (int i = 0; i < sketch2.size(); i++) {
-        if (filter.contains(sketch2[i])) {
-            intersections++;
-        }
-    }
-
-    int sketch_size = sketch2.size();
-    intersections -= FALSE_POSITIVE * sketch_size;
-
-    double containment_estimate = ((double)intersections / sketch_size);
-
-    int size_sequence1_set = s1 - kmer_size + 1;
-    int size_sequence2_set = s2 - kmer_size + 1;
-
-    return ((double)(containment_estimate * size_sequence2_set)) / (size_sequence1_set + size_sequence2_set - size_sequence2_set * containment_estimate);
+    return containment_jaccard_estimate(sequence1, sequence2, sketch2, filter, kmer_size);
 }
 
 void sequences_similarity(vector <string> sequences1, vector <string> sequences2) {
     int n1 = sequences1.size(), n2 = sequences2.size(), kmer_size;
-    double min_hash_jaccard, containment_hash_jaccard;
+    double min_hash_jaccard, containment_hash_jaccard, jaccard_similarity;
 
     cout << "Enter value of k (Length of a shingle): ";
     cin >> kmer_size;
@@ -229,8 +247,10 @@ void sequences_similarity(vector <string> sequences1, vector <string> sequences2
         for (int j = 0; j < n2; j++) {
             min_hash_jaccard = min_hash(sequences1[i], sequences2[j], kmer_size);
             containment_hash_jaccard = containment_hash(sequences1[i], sequences2[j], kmer_size);
-            cout << "Min hash jaccard: " << min_hash_jaccard << endl;
-            cout << "Containment hash: " << containment_hash_jaccard << endl;
+            jaccard_similarity = true_jaccard_similarity(sequences1[i], sequences2[j], kmer_size);
+            cout << "Min hash jaccard estimate: " << min_hash_jaccard << endl;
+            cout << "Containment hash jaccard estimate: " << containment_hash_jaccard << endl;
+            cout << "True jaccard similarity: " << jaccard_similarity << endl;
         }
     }
 }
