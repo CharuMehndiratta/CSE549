@@ -2,9 +2,11 @@
 #include <vector>
 #include <fstream>
 #include "MurmurHash3.h"
+#include "BloomFilter.hpp"
 
 #define NUM_HASH 200
-#define MAX_HASH_SIZE 1000000000
+#define LARGE_PRIME 9999999999971
+#define FALSE_POSITIVE 0.001
 
 using namespace std;
 
@@ -36,7 +38,7 @@ uint64_t get_integer_fingerprint(string shingle, int hash_num) {
 
     MurmurHash3_x64_128(key, (uint64_t)strlen(key), seeds[hash_num], hash_output);
 
-    return (hash_output[0] +  NUM_HASH * hash_output[1]) % MAX_HASH_SIZE;
+    return (hash_output[0] +  NUM_HASH * hash_output[1]) % LARGE_PRIME;
 }
 
 vector<string> generate_shingles(string sequence, int k) {
@@ -71,10 +73,30 @@ vector<uint64_t> generate_sketch(vector <string> shingles) {
     return sketch;
 }
 
-vector<string> read_dataset() {
+vector<string> generate_kmer_sketch(vector <string> shingles) {
+    int num_shingles = shingles.size();
+    vector <string> sketch;
+
+    for (int i = 0; i < NUM_HASH; i++) {
+        uint64_t min_mer = LLONG_MAX;
+        string kmer;
+        for (int j = 0; j < num_shingles; j++) {
+            uint64_t hash_value = get_integer_fingerprint(shingles[j], i);
+            if (hash_value < min_mer) {
+                min_mer = hash_value;
+                kmer = shingles[j];
+            }
+        }
+        sketch.push_back(kmer);
+    }
+
+    return sketch;
+}
+
+vector<string> read_dataset(string filename) {
     string sequence, line;
     vector <string> sequences;
-    ifstream file ("dataset.txt");
+    ifstream file (filename);
 
     if (file.is_open()) {
         getline(file, line);
@@ -113,16 +135,11 @@ void print_sketch(vector <uint64_t> sketch) {
     cout << "\n";
 }
 
-void min_hash(string sequence1, string sequence2) {
-    int k;
+double min_hash(string sequence1, string sequence2, int k) {
     double jaccard_index;
     vector <string> shingles1, shingles2;
     vector <uint64_t> sketch1, sketch2;
 
-    cout << "Enter value of k: ";
-    cin >> k;
-
-    generate_seeds();
     shingles1 = generate_shingles(sequence1, k);
     sketch1   = generate_sketch(shingles1);
 
@@ -134,26 +151,96 @@ void min_hash(string sequence1, string sequence2) {
     cout << "Sketch 2: ";
     print_sketch(sketch2);
 
-    jaccard_index = jaccard_similarity(sketch1, sketch2);
+    // jaccard_index = jaccard_similarity(sketch1, sketch2);
 
-    cout << "Jaccard index: " << jaccard_index;
+    return jaccard_similarity(sketch1, sketch2);
+
+    // cout << "Jaccard index: " << jaccard_index;
 }
 
-void sequence_similarity(vector <string> sequences) {
-    int num_sequences = sequences.size();
+double containment_hash(string sequence1, string sequence2, int kmer_size) {
+    if (sequence2.size() > sequence1.size()) {
+        string swap = sequence1;
+        sequence1 = sequence2;
+        sequence2 = swap;
+    }
 
-    for (int i = 0; i < num_sequences - 1; i++) {
-        for (int j = 1; j < num_sequences; j++) {
-            min_hash(sequences[i], sequences[j]);
+    bloom_parameters parameters;
+    int s1 = sequence1.size();
+    int s2 = sequence2.size();
+
+    // How many elements roughly do we expect to insert?
+    parameters.projected_element_count = s1 - kmer_size + 1; // Number of k mers
+
+    // Maximum tolerable false positive probability? (0,1)
+    parameters.false_positive_probability = FALSE_POSITIVE; // 1 in 1000
+
+   // Simple randomizer (optional)
+    parameters.random_seed = rand();
+
+    if (!parameters) {
+        cout << "Error - Invalid set of bloom filter parameters!" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    parameters.compute_optimal_parameters();
+    bloom_filter filter(parameters);
+
+    string kmer;
+    for (int i = 0; i <= s1 - kmer_size; i++) {
+        kmer = sequence1.substr(i, kmer_size);
+        if (!filter.contains(kmer)) {
+            filter.insert(kmer);
+        }
+    }
+
+    vector <string> shingles2;
+    vector <string> sketch2;
+    shingles2 = generate_shingles(sequence2, kmer_size);
+    sketch2   = generate_kmer_sketch(shingles2);
+
+    int intersections = 0;
+    for (int i = 0; i < sketch2.size(); i++) {
+        if (filter.contains(sketch2[i])) {
+            intersections++;
+        }
+    }
+
+    int sketch_size = sketch2.size();
+    intersections -= FALSE_POSITIVE * sketch_size;
+
+    double containment_estimate = ((double)intersections / sketch_size);
+
+    int size_sequence1_set = s1 - kmer_size + 1;
+    int size_sequence2_set = s2 - kmer_size + 1;
+
+    return ((double)(containment_estimate * size_sequence2_set)) / (size_sequence1_set + size_sequence2_set - size_sequence2_set * containment_estimate);
+}
+
+void sequences_similarity(vector <string> sequences1, vector <string> sequences2) {
+    int n1 = sequences1.size(), n2 = sequences2.size(), kmer_size;
+    double min_hash_jaccard, containment_hash_jaccard;
+
+    cout << "Enter value of k (Length of a shingle): ";
+    cin >> kmer_size;
+    generate_seeds();
+
+    for (int i = 0; i < n1; i++) {
+        for (int j = 0; j < n2; j++) {
+            min_hash_jaccard = min_hash(sequences1[i], sequences2[j], kmer_size);
+            containment_hash_jaccard = containment_hash(sequences1[i], sequences2[j], kmer_size);
+            cout << "Min hash jaccard: " << min_hash_jaccard << endl;
+            cout << "Containment hash: " << containment_hash_jaccard << endl;
         }
     }
 }
 
 int main() {
-    vector <string> sequences;
-    sequences = read_dataset();
+    vector <string> sequences1, sequences2;
+    sequences1 = read_dataset("dataset1.txt");
+    sequences2 = read_dataset("dataset2.txt");
 
-    sequence_similarity(sequences);
+    sequences_similarity(sequences1, sequences2);
 
     return 0;
 }
