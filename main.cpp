@@ -13,12 +13,12 @@ using namespace std;
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
 vector<uint64_t> seeds;
 
-vector<string> generate_shingles(string sequence, int k) {
+vector<string> generate_shingles(string sequence, int kmer_size) {
     int size = sequence.size();
     vector <string> shingles;
 
-    for (int i = 0; i <= size - k; i++) {
-        shingles.push_back(sequence.substr(i, k));
+    for (int i = 0; i <= size - kmer_size; i++) {
+        shingles.push_back(sequence.substr(i, kmer_size));
     }
 
     return shingles;
@@ -173,15 +173,15 @@ void print_sketch(vector <uint64_t> sketch) {
     cout << "\n";
 }
 
-double min_hash(string sequence1, string sequence2, int k) {
+double min_hash(string sequence1, string sequence2, int kmer_size) {
     double jaccard_index;
     vector <string> shingles1, shingles2;
     vector <uint64_t> sketch1, sketch2;
 
-    shingles1 = generate_shingles(sequence1, k);
+    shingles1 = generate_shingles(sequence1, kmer_size);
     sketch1   = generate_sketch(shingles1);
 
-    shingles2 = generate_shingles(sequence2, k);
+    shingles2 = generate_shingles(sequence2, kmer_size);
     sketch2   = generate_sketch(shingles2);
 
     // cout << "Sketch 1: ";
