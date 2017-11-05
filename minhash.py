@@ -45,7 +45,7 @@ class CountEstimator(object):
         self._counts = blist([0]*n)
 
         self._kmers = blist(['']*n)
-        self.hash_list = None
+        # self.hash_list = None
 
 
         # Optional container for the true number of k-mers in the genome used to populate the sketch
@@ -64,25 +64,26 @@ class CountEstimator(object):
             #h = hash(kmer)
 
         h = h % self.p
-        if self.hash_list:  # If I only want to include hashes that occur in hash_list
-            if h not in self.hash_list:  # If the kmer isn't in the hash_list, then break
-                return
+
+        print ("hash value ",h)
+        # if self.hash_list:  # If I only want to include hashes that occur in hash_list
+        #     if h not in self.hash_list:  # If the kmer isn't in the hash_list, then break
+        #         return
 
         if h >= _mins[-1]:
             return
 
         i = bisect.bisect_left(_mins, h)  # find index to insert h
+        print ("i value ",i)
         if _mins[i] == h:  # if h in mins, increment counts
-            _counts[i] += 1
             return
         else:  # otherwise insert h, initialize counts to 1, and insert kmer if necessary
             _mins.insert(i, h)
             _mins.pop()
-            _counts.insert(i, 1)
-            _counts.pop()
             if _kmers:
+                print ("kmer comign inside ",kmer)
                 _kmers.insert(i, np.string_(kmer))
-                _kmers.pop()
+                print ("kmer",_kmers.pop())
             return
 
         assert 0, "should never reach this"

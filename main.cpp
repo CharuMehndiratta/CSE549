@@ -7,8 +7,9 @@
 #include "MurmurHash3.h"
 #include "BloomFilter.hpp"
 #include <unordered_set>
+#include <set>
 #define MAX_HASH_ALGO 200
-#define MAX_HASH_SIZE 10000000000
+#define MAX_PRIME_NO 9999999999971
 #define FALSE_POSTIVITY 0.001
 
 using namespace std;
@@ -23,9 +24,7 @@ float jaccard_similarity(vector<uint64_t> & read1, vector<uint64_t>& read2){
         }
     }
 
-   // cout << common << " / " << total <<"\n";
     jaccard = common/total;
-    cout << jaccard << "  ";
     return jaccard;
 }
 
@@ -35,7 +34,6 @@ void generate_rest_random_hash() {
     srand (time(NULL));
     for (int i = 0; i < MAX_HASH_ALGO; i++) {
         int x = rand();
-       // cout<<"\n rand -- "<<i;
         random_hash_vector.push_back(i);
     }
 
@@ -46,16 +44,12 @@ void generate_hash_value(int k, string str, vector<uint64_t> &hash_value, vector
     
     uint64_t hash_otpt[2], temp_hash;
     string temp;
- //   cout<<"\n input  "<<str;
-   // cout<<"\n";
     for (int i = 0; i <= str.size() - k; i++) {
         temp = str.substr(i, k);
         const char *key = temp.c_str();
-     //   cout<<"\n key - "<<temp;
         for( int j = 0; j < MAX_HASH_ALGO; j++) {
             MurmurHash3_x64_128(key, (uint64_t)strlen(key), random_hash_vector[j], hash_otpt);
-            temp_hash = (hash_otpt[0] +  MAX_HASH_ALGO * hash_otpt[1]) % MAX_HASH_SIZE;
-       //     cout<<" temp_hash "<<temp_hash;
+            temp_hash = (hash_otpt[0] +  MAX_HASH_ALGO * hash_otpt[1]) % MAX_PRIME_NO;
 
             if(hash_value[j] > temp_hash) {
                 hash_value[j] = temp_hash;
@@ -206,27 +200,56 @@ int main() {
                 size_B_est++;
             }
         }
-        
         int int_est = 0;
-        int hash_value;
-        for(int k = 0; k < long_reads.size(); k++){
-	 	
+        int no_of_hash_functions;
+        uint64_t hash_otpt[2], temp_hash;
+
+
+        for(int k = 0; k < long_reads.size(); k++) {
             unordered_set<string> read_set;
-         	for (int l = 0; l <= long_reads[k].size() - kmerSize; l++) {
-             	  temp = long_reads[k].substr(l, kmerSize);
-                  if(filter.contains(temp)) {
-                      int_est++;
-                   }
-                   read_set.insert(temp);
+            no_of_hash_functions = references[i].size()/long_reads[k].size();
+            vector<uint64_t> _mins(no_of_hash_functions, MAX_PRIME_NO);
+            vector<string> _kmers(no_of_hash_functions);
+            int_est = 0;
+            
+            for (int l = 0; l <= long_reads[k].size() - kmerSize; l++) {
+                temp = long_reads[k].substr(l, kmerSize);
+                const char *key = temp.c_str();
+                MurmurHash3_x64_128(key, (uint64_t)strlen(key), 1234567, hash_otpt);
+                temp_hash = (hash_otpt[0] +  no_of_hash_functions * hash_otpt[1]) % MAX_PRIME_NO;
+
+                if(temp_hash >= _mins[_mins.size()-1]) {
+                    continue;
                 }
 
-            hash_value = references[i].size()/long_reads[k].size();
+                int index = binary_search (_mins.begin(), _mins.end(), temp_hash);
+                if (_mins[index] == temp_hash)  //# if h in mins, increment counts
+                    continue;
+                _mins.insert(_mins.begin() + index, temp_hash);
+                _mins.pop_back();
+                if (_kmers.size() > 0) {
+                    _kmers.insert(_kmers.begin() + index, temp);
+                    _kmers.pop_back();
+                }
+                
+            }
+
+            for (int l = 0; l < _kmers.size(); l++) {
+                if(filter.contains(_kmers[l])) {
+                    int_est++;
+                }
+            }
+
+         	for (int l = 0; l <= long_reads[k].size() - kmerSize; l++) {
+                temp = long_reads[k].substr(l, kmerSize);
+                read_set.insert(temp);
+            }
+
             size_A = read_set.size();
-         	int_est -= floor(FALSE_POSTIVITY * hash_value);  // adjust for the false positive rate
-	        float containment_est = int_est / float(hash_value);  //estimate of the containment index
+         	int_est -= floor(FALSE_POSTIVITY * no_of_hash_functions);  // adjust for the false positive rate
+	        float containment_est = int_est / float(no_of_hash_functions);  //estimate of the containment index
        		float jaccard_est = (size_A * containment_est) / (float)(size_A + size_B_est - (size_A * containment_est));
             con_hash_jaccard.push_back(jaccard_est);
-            //cout <<  con_hash_jaccard.back();
       	 }   	
      }
 
