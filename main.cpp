@@ -5,7 +5,7 @@
 #include "MurmurHash3.h"
 #include <string>
 
-#define MAX_HASH_ALGO 5
+#define MAX_HASH_ALGO 200
 #define MAX_HASH_SIZE 1000000000
 
 using namespace std;
@@ -39,7 +39,7 @@ void generate_rest_random_hash() {
 
 
 void generate_hash_value(int k, string str, vector<uint64_t> &hash_value, vector<string> &hash_string) {
-    
+
     uint64_t hash_otpt[2], temp_hash;
     string temp;
     cout<<"\n input  "<<str;
@@ -61,49 +61,50 @@ void generate_hash_value(int k, string str, vector<uint64_t> &hash_value, vector
     }
 }
 
-
-int main() {
-    string input = "", tmp;
-    vector < vector<uint64_t> > hash_values;
-    vector < vector<string> > hash_strings;
-    vector < string > strings;
-    int n;
+vector<string> read_dataset() {
+    string sequence, line;
+    vector <string> sequences;
     ifstream file ("dataset.txt");
-    
+
     if (file.is_open()) {
-        getline(file, tmp);
-        while(getline(file, tmp)) {
-            if(tmp[0] != '>') {
-                input += tmp;
-            }
-            else {
-                strings.push_back(input);
-                input = "";
+        getline(file, line);
+        while (getline(file, line)) {
+            if (line[0] != '>') {
+                sequence += line;
+            } else {
+                sequences.push_back(sequence);
+                sequence = "";
             }
         }
     } else {
-        cout<<"\n Unable to open file";
+        cout << "Unable to open file\n";
+        exit(EXIT_FAILURE);
     }
+    sequences.push_back(sequence);
     file.close();
-    
-    strings.push_back(input);
-    
-    n = int(strings.size());
+
+    return sequences;
+}
+
+void min_hash(vector <string> sequences) {
+    vector < vector<uint64_t> > hash_values;
+    vector < vector<string> > hash_strings;
+
     generate_rest_random_hash();
-    for(int i = 0; i < n; i++) {
+    for(int i = 0; i < sequences.size(); i++) {
         vector<uint64_t> tmp(MAX_HASH_ALGO, LLONG_MAX);
         vector<string> temp_str(MAX_HASH_ALGO);
         hash_values.push_back(tmp);
         hash_strings.push_back(temp_str);
-        generate_hash_value(3, strings[i], hash_values[i], hash_strings[i]);
-        
+        generate_hash_value(3, sequences[i], hash_values[i], hash_strings[i]);
+
         cout<<"\n-------------\n";
         for(int j = 0; j < MAX_HASH_ALGO; j++) {
             cout<<hash_values[i][j]<<" => ";
             cout<<hash_strings[i][j]<<" ";
         }
     }
-    
+
     for(int k = 0; k < hash_values.size()-1; k++){
         for(int l = k + 1; l < hash_values.size(); l++){
             cout << "\nJaccard similarity between index " << k << " and index " << l << " is: ";
@@ -111,5 +112,12 @@ int main() {
             cout << "\n";
         }
     }
-    
+}
+
+int main() {
+    vector <string> sequences;
+    sequences = read_dataset();
+    min_hash(sequences);
+
+    return 0;
 }
