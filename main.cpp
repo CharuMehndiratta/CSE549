@@ -1,64 +1,71 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-#include <time.h>
 #include "MurmurHash3.h"
-#include <string>
 
-#define MAX_HASH_ALGO 200
+#define NUM_HASH 200
 #define MAX_HASH_SIZE 1000000000
 
 using namespace std;
 
-float jaccard_similarity(vector<uint64_t> & read1, vector<uint64_t>& read2){
-    float common = 0, total = read1.size();
-    float jaccard;
+// https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
+vector<uint64_t> seeds;
 
-    for (int i = 0; i < read1.size(); i++) {
-        if(read1[i] == read2[i]) {
+double jaccard_similarity(vector <uint64_t> sketch1, vector <uint64_t> sketch2){
+    int sketch_size = sketch1.size(), common = 0;
+
+    for (int i = 0; i < sketch1.size(); i++) {
+        if(sketch1[i] == sketch2[i]) {
             common++;
         }
     }
 
-    cout << common << " / " << total <<"\n";
-    jaccard = common/total;
-    return jaccard;
+    return ((double)common / sketch_size);
 }
 
-
-vector<uint64_t> random_hash_vector;
-void generate_rest_random_hash() {
+void generate_seeds() {
     srand (time(NULL));
-    for (int i = 0; i < MAX_HASH_ALGO; i++) {
-        int x = rand();
-        cout<<"\n rand -- "<<x;
-        random_hash_vector.push_back(x);
+    for (int i = 0; i < NUM_HASH; i++) {
+        seeds.push_back(rand());
+    }
+}
+
+uint64_t get_integer_fingerprint(string shingle, int hash_num) {
+    const char *key = shingle.c_str();
+    uint64_t hash_output[2];
+
+    MurmurHash3_x64_128(key, (uint64_t)strlen(key), seeds[hash_num], hash_output);
+
+    return (hash_output[0] +  NUM_HASH * hash_output[1]) % MAX_HASH_SIZE;
+}
+
+vector<string> generate_shingles(string sequence, int k) {
+    int size = sequence.size();
+    vector <string> shingles;
+
+    for (int i = 0; i <= size - k; i++) {
+        shingles.push_back(sequence.substr(i, k));
     }
 
+    return shingles;
 }
 
+vector<uint64_t> generate_sketch(vector <string> shingles) {
+    int num_shingles = shingles.size();
+    vector <uint64_t> sketch;
 
-void generate_hash_value(int k, string str, vector<uint64_t> &hash_value, vector<string> &hash_string) {
-
-    uint64_t hash_otpt[2], temp_hash;
-    string temp;
-    cout<<"\n input  "<<str;
-    cout<<"\n";
-    for (int i = 0; i <= str.size()-k; i++) {
-        temp = str.substr(i,k);
-        const char *key = temp.c_str();
-        cout<<"\n key - "<<temp;
-        for( int j = 0; j < MAX_HASH_ALGO; j++) {
-            MurmurHash3_x64_128(key, (uint64_t)strlen(key), random_hash_vector[j], hash_otpt);
-            temp_hash = (hash_otpt[0] +  MAX_HASH_ALGO * hash_otpt[1]) % MAX_HASH_SIZE;
-            cout<<" temp_hash "<<temp_hash;
-
-            if(hash_value[j] > temp_hash) {
-                hash_value[j] = temp_hash;
-                hash_string[j] = temp;
+    for (int i = 0; i < NUM_HASH; i++) {
+        uint64_t min_mer = LLONG_MAX;
+        for (int j = 0; j < num_shingles; j++) {
+            uint64_t hash_value = get_integer_fingerprint(shingles[j], i);
+            if (hash_value < min_mer) {
+                min_mer = hash_value;
             }
         }
+        sketch.push_back(min_mer);
     }
+
+    return sketch;
 }
 
 vector<string> read_dataset() {
@@ -86,30 +93,33 @@ vector<string> read_dataset() {
     return sequences;
 }
 
-void min_hash(vector <string> sequences) {
-    vector < vector<uint64_t> > hash_values;
-    vector < vector<string> > hash_strings;
+void min_hash(string sequence1, string sequence2) {
+    int k;
+    double jaccard_index;
+    vector <string> shingles1, shingles2;
+    vector <uint64_t> sketch1, sketch2;
 
-    generate_rest_random_hash();
-    for(int i = 0; i < sequences.size(); i++) {
-        vector<uint64_t> tmp(MAX_HASH_ALGO, LLONG_MAX);
-        vector<string> temp_str(MAX_HASH_ALGO);
-        hash_values.push_back(tmp);
-        hash_strings.push_back(temp_str);
-        generate_hash_value(3, sequences[i], hash_values[i], hash_strings[i]);
+    cout << "Enter value of k: ";
+    cin >> k;
 
-        cout<<"\n-------------\n";
-        for(int j = 0; j < MAX_HASH_ALGO; j++) {
-            cout<<hash_values[i][j]<<" => ";
-            cout<<hash_strings[i][j]<<" ";
-        }
-    }
+    generate_seeds();
+    shingles1 = generate_shingles(sequence1, k);
+    sketch1   = generate_sketch(shingles1);
 
-    for(int k = 0; k < hash_values.size()-1; k++){
-        for(int l = k + 1; l < hash_values.size(); l++){
-            cout << "\nJaccard similarity between index " << k << " and index " << l << " is: ";
-            cout << jaccard_similarity(hash_values[k], hash_values[l]);
-            cout << "\n";
+    shingles2 = generate_shingles(sequence2, k);
+    sketch2   = generate_sketch(shingles2);
+
+    jaccard_index = jaccard_similarity(sketch1, sketch2);
+
+    cout << "Jaccard index: " << jaccard_index;
+}
+
+void sequence_similarity(vector <string> sequences) {
+    int num_sequences = sequences.size();
+
+    for (int i = 0; i < num_sequences - 1; i++) {
+        for (int j = 1; j < num_sequences; j++) {
+            min_hash(sequences[i], sequences[j]);
         }
     }
 }
@@ -117,7 +127,8 @@ void min_hash(vector <string> sequences) {
 int main() {
     vector <string> sequences;
     sequences = read_dataset();
-    min_hash(sequences);
+
+    sequence_similarity(sequences);
 
     return 0;
 }
