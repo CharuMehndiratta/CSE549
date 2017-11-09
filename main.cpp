@@ -25,6 +25,11 @@ vector<string> generate_shingles(string sequence, int kmer_size) {
     return shingles;
 }
 
+/*************************************************************/
+/* Generate Jaccard similarity between two sequences         */
+/* using conventional approach                               */
+/*************************************************************/
+
 double true_jaccard_similarity(string sequence1, string sequence2, int kmer_size) {
     int s1 = sequence1.size(), s2 = sequence2.size();
     vector <string> shingles1, shingles2, v;
@@ -45,6 +50,11 @@ double true_jaccard_similarity(string sequence1, string sequence2, int kmer_size
     return ((double)num_intersection) / num_union;
 }
 
+/*************************************************************/
+/* Generate Jaccard similarity between two sequences         */
+/* using min_hash                                            */
+/*************************************************************/
+
 double min_hash_jaccard_estimate(vector <uint64_t> sketch1, vector <uint64_t> sketch2){
     int sketch_size = sketch1.size(), common = 0;
 
@@ -56,6 +66,11 @@ double min_hash_jaccard_estimate(vector <uint64_t> sketch1, vector <uint64_t> sk
 
     return ((double)common / sketch_size);
 }
+
+/*************************************************************/
+/* Generate Jaccard similarity between two sequences         */
+/* using containment_hash                                    */
+/*************************************************************/
 
 double containment_jaccard_estimate(string sequence1, string sequence2, vector <string> sketch2, bloom_filter filter, int kmer_size) {
     int intersections = 0;
@@ -132,6 +147,10 @@ vector<string> generate_kmer_sketch(vector <string> shingles) {
     return sketch;
 }
 
+/*************************************************************/
+/* Read from file                                            */
+/*************************************************************/
+
 vector<string> read_dataset(string filename) {
     string sequence, line;
     vector <string> sequences;
@@ -173,6 +192,10 @@ void print_sketch(vector <uint64_t> sketch) {
     }
     cout << "\n";
 }
+
+/*************************************************************/
+/* Initialize the min_hash values                            */
+/*************************************************************/
 
 double min_hash(string sequence1, string sequence2, int kmer_size) {
     double jaccard_index;
