@@ -190,6 +190,10 @@ vector<string> read_dataset(string filename) {
     return sequences;
 }
 
+/*************************************************************/
+/* Output Sketch to console                                  */
+/*************************************************************/
+
 void print_sketch(vector <uint64_t> sketch) {
     int size = sketch.size();
     for (int i = 0; i < size; i++) {
@@ -224,6 +228,10 @@ double min_hash(string sequence1, string sequence2, int kmer_size) {
 
     return min_hash_jaccard_estimate(sketch1, sketch2);
 }
+
+/*************************************************************/
+/* Calculate Jaccard Index using Containment hash            */
+/*************************************************************/
 
 double containment_hash(string sequence1, string sequence2, int kmer_size) {
     if (sequence2.size() > sequence1.size()) {
@@ -268,6 +276,10 @@ double containment_hash(string sequence1, string sequence2, int kmer_size) {
     return containment_jaccard_estimate(sequence1, sequence2, sketch2, filter, kmer_size);
 }
 
+/*************************************************************/
+/* All vs all sequence similarity                            */
+/*************************************************************/
+
 void sequences_similarity(vector <string> sequences1, vector <string> sequences2) {
     int n1 = sequences1.size(), n2 = sequences2.size(), kmer_size;
     double min_hash_jaccard, containment_hash_jaccard, jaccard_similarity;
@@ -289,6 +301,10 @@ void sequences_similarity(vector <string> sequences1, vector <string> sequences2
         }
     }
 }
+
+/*************************************************************/
+/* Start execution                                           */
+/*************************************************************/
 
 int main() {
     vector <string> sequences1, sequences2;
