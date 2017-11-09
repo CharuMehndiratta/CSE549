@@ -14,6 +14,10 @@ using namespace std;
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
 vector<uint64_t> seeds;
 
+/*************************************************************/
+/* Generateing shingles(kmers) for the sequence              */
+/*************************************************************/
+
 vector<string> generate_shingles(string sequence, int kmer_size) {
     int size = sequence.size();
     vector <string> shingles;
@@ -90,6 +94,10 @@ double containment_jaccard_estimate(string sequence1, string sequence2, vector <
     return ((double)(containment_estimate * size_sequence2_set)) / (size_sequence1_set + size_sequence2_set - size_sequence2_set * containment_estimate);
 }
 
+/*************************************************************/
+/* Generating random seeds value                             */
+/*************************************************************/
+
 void generate_seeds() {
     srand (time(NULL));
     for (int i = 0; i < NUM_HASH; i++) {
@@ -106,26 +114,32 @@ uint64_t get_integer_fingerprint(string shingle, int hash_num) {
     return (hash_output[0] +  NUM_HASH * hash_output[1]) % LARGE_PRIME;
 }
 
+/*************************************************************/
+/* Generate sketch of minimum valued fingerprint             */
+/*************************************************************/
+
 vector<uint64_t> generate_sketch(vector <string> shingles) {
     int num_shingles = shingles.size();
     vector <uint64_t> sketch;
 
     for (int i = 0; i < NUM_HASH; i++) {
         uint64_t min_mer = LLONG_MAX;
-        // cout << "Hash "<< i << ":\n---------------\n";
         for (int j = 0; j < num_shingles; j++) {
             uint64_t hash_value = get_integer_fingerprint(shingles[j], i);
             if (hash_value < min_mer) {
                 min_mer = hash_value;
             }
-            // cout << shingles[j] << " : " << hash_value << "\n";
         }
-        // cout << "Min-mer : " << min_mer << "\n\n";
         sketch.push_back(min_mer);
     }
 
     return sketch;
 }
+
+/*************************************************************/
+/* Generate sketch of shingles corresponding to the minimum  */ 
+/* valued fingerprint                                        */
+/*************************************************************/
 
 vector<string> generate_kmer_sketch(vector <string> shingles) {
     int num_shingles = shingles.size();
@@ -207,11 +221,6 @@ double min_hash(string sequence1, string sequence2, int kmer_size) {
 
     shingles2 = generate_shingles(sequence2, kmer_size);
     sketch2   = generate_sketch(shingles2);
-
-    // cout << "Sketch 1: ";
-    // print_sketch(sketch1);
-    // cout << "Sketch 2: ";
-    // print_sketch(sketch2);
 
     return min_hash_jaccard_estimate(sketch1, sketch2);
 }
