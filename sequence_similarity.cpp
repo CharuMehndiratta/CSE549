@@ -4,6 +4,8 @@
 #include <iomanip>
 #include "MurmurHash3.h"
 #include "BloomFilter.hpp"
+#include <cstring>
+#include <string.h>
 
 #define NUM_HASH 200
 #define LARGE_PRIME 9999999999971
@@ -306,12 +308,95 @@ void sequences_similarity(vector <string> sequences1, vector <string> sequences2
 /* Start execution                                           */
 /*************************************************************/
 
+int num_hash;
+vector<int> min_sketch;
+
+void generate_sketch(string shingle) {
+
+    for (int i = 0; i < num_hash; i++) {
+        uint64_t min_mer = LLONG_MAX;
+        uint64_t hash_value = get_integer_fingerprint(shingle, i);
+
+        if (hash_value < min_sketch[i]) {
+            min_sketch[i] = hash_value;
+        }
+    }
+
+}
+
+
 int main() {
-    vector <string> sequences1, sequences2;
-    sequences1 = read_dataset("dataset1.txt");
-    sequences2 = read_dataset("dataset2.txt");
+    // vector <string> sequences1, sequences2;
+    // sequences1 = read_dataset("dataset1.txt");
+    // sequences2 = read_dataset("dataset2.txt");
 
-    sequences_similarity(sequences1, sequences2);
+    // sequences_similarity(sequences1, sequences2);
 
+    int kmer_size;
+    double false_positive;
+
+    cin>>kmer_size;
+    cin>>false_positive;
+    cin>>num_hash;
+
+    string kmer;
+
+    ifstream file ("reference_genome.txt");
+    ofstream min_sketch_file;
+    ofstream bloom_filter_file;
+
+    min_sketch_file.open("min_sketch.txt");
+    bloom_filter_file.open("bloom_filter.txt");
+
+
+    if (file.is_open()) {
+        string ref_genome = "";
+
+        while(getline(file, ref_genome)){
+
+            fill(min_sketch.begin(), min_sketch.end(), LLONG_MAX);
+
+            int ref_size = ref_genome.size();
+            bloom_parameters parameters;
+
+            // How many elements roughly do we expect to insert?
+            parameters.projected_element_count = ref_size - kmer_size + 1; // Number of k mers
+
+            // Maximum tolerable false positive probability? (0,1)
+            parameters.false_positive_probability = false_positive; // 1 in 1000
+
+           // Simple randomizer (optional)
+            parameters.random_seed = rand();
+
+            if (!parameters) {
+                cout << "Error - Invalid set of bloom filter parameters!" << endl;
+                exit(EXIT_FAILURE);
+            }
+
+            parameters.compute_optimal_parameters();
+            bloom_filter filter(parameters);
+            
+            
+            for(int i = 0; i < ref_size - kmer_size; i++){
+                kmer = ref_genome.substr(i, kmer_size);
+
+                // Adding kmers to min hash
+                generate_sketch(kmer);
+
+                // Adding kmers to bloom filter
+                if (!filter.contains(kmer)) {
+                    filter.insert(kmer);
+                }
+            }
+
+            // Writing min_sketch to file
+            min_sketch_file.write((char*)&min_sketch, sizeof(min_sketch));
+
+            // Writing bloom filter to filer
+            bloom_filter_file.write((char*)&filter, sizeof(filter));
+        }
+    }
     return 0;
 }
+
+
