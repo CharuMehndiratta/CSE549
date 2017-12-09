@@ -7,6 +7,43 @@
 
 using namespace std;
 
+
+void generate_sketch() {
+    
+}
+
+void genertae_jacard_index(string long_read) {
+    
+
+}
+
+void read_dataset(string filename) {
+
+    string sequence, line;
+    ifstream file (filename);
+
+    if (file.is_open()) {
+        getline(file, line);
+        while (getline(file, line)) {
+            if (line[0] != '>') {
+
+                genertae_jacard_index(line);
+
+            //     sequence += line;
+            // } else {
+            //     cout<<"\n hello";
+                
+            //     sequence = "";
+            }
+        }
+    } else {
+        cout << "Unable to open file\n";
+        exit(EXIT_FAILURE);
+    }
+    file.close();
+}
+
+
 /*************************************************************/
 /* Start execution                                           */
 /*************************************************************/
@@ -34,6 +71,8 @@ int main(int argc, char *argv[]) {
     if (long_read_file == NULL) {
 
     }
+
+    read_dataset(long_read_file);
 
     return 0;
 }

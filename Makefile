@@ -2,7 +2,7 @@ CC = g++
 CFLAGS  = -g -Wall
 
 all:
-	g++ sequence_similarity.cpp  MurmurHash3.cpp -o sequence_similarity -I include/
+	g++ min_containment_hash.cpp  MurmurHash3.cpp -o min_containment_hash -I include/
 
 clean:
-	$(RM) sequence_similarity *.o *~
+	$(RM) min_containment_hash *.o *~
