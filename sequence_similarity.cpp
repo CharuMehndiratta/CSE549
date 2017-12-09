@@ -309,7 +309,8 @@ void sequences_similarity(vector <string> sequences1, vector <string> sequences2
 /*************************************************************/
 
 int num_hash;
-vector<int> min_sketch;
+vector<uint64_t> min_sketch(1000);
+
 
 void generate_sketch(string shingle) {
 
@@ -334,10 +335,17 @@ int main() {
 
     int kmer_size;
     double false_positive;
+    int ref_size;
 
-    cin>>kmer_size;
-    cin>>false_positive;
-    cin>>num_hash;
+    // cin>>kmer_size;
+    // cin>>false_positive;
+    // cin>>num_hash;
+
+    kmer_size = 16;
+    false_positive = 0.1;
+    num_hash = 100;
+
+    min_sketch.resize(num_hash);
 
     string kmer;
 
@@ -348,15 +356,18 @@ int main() {
     min_sketch_file.open("min_sketch.txt");
     bloom_filter_file.open("bloom_filter.txt");
 
+    generate_seeds();
 
     if (file.is_open()) {
         string ref_genome = "";
 
         while(getline(file, ref_genome)){
 
-            fill(min_sketch.begin(), min_sketch.end(), LLONG_MAX);
+            for(int j=0; j<num_hash; j++) {
+                min_sketch[j] = LLONG_MAX;
+            }
 
-            int ref_size = ref_genome.size();
+            ref_size = ref_genome.size();
             bloom_parameters parameters;
 
             // How many elements roughly do we expect to insert?
@@ -373,14 +384,13 @@ int main() {
                 exit(EXIT_FAILURE);
             }
 
-            parameters.compute_optimal_parameters();
             bloom_filter filter(parameters);
-            
             
             for(int i = 0; i < ref_size - kmer_size; i++){
                 kmer = ref_genome.substr(i, kmer_size);
 
-                // Adding kmers to min hash
+
+                //Adding kmers to min hash
                 generate_sketch(kmer);
 
                 // Adding kmers to bloom filter
@@ -389,7 +399,7 @@ int main() {
                 }
             }
 
-            // Writing min_sketch to file
+            //Writing min_sketch to file
             min_sketch_file.write((char*)&min_sketch, sizeof(min_sketch));
 
             // Writing bloom filter to filer
