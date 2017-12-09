@@ -7,6 +7,16 @@
 
 using namespace std;
 
+/* Number of hash functions, false positive and kmer size with default values */
+double false_positive;
+
+int kmer_size;
+
+int num_hash;
+
+// https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
+vector<uint64_t> seeds;
+
 void generate_seeds() {
     srand (time(NULL));
     for (int i = 0; i < num_hash; i++) {
@@ -23,7 +33,7 @@ uint64_t get_integer_fingerprint(string shingle, int hash_num) {
     return (hash_output[0] +  num_hash * hash_output[1]) % LARGE_PRIME;
 }
 
-void generate_sketch(string shingle, vector<uint64_t> min_sketch) {
+void generate_sketch(string shingle, vector<uint64_t> &min_sketch) {
 
     for (int i = 0; i < num_hash; i++) {
         uint64_t min_mer = LLONG_MAX;

@@ -12,11 +12,21 @@
 
 using namespace std;
 
+/* Number of hash functions, false positive and kmer size with default values */
+extern double false_positive;
+
+extern int kmer_size;
+
+extern int num_hash;
+
+// https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
+extern vector<uint64_t> seeds;
+
 string reference_file;
 
 void read_min_sketch() {
 
-    vector<long long> min_sketch;
+    vector<uint64_t> min_sketch(num_hash, LLONG_MAX);
     ifstream file_min_read("min_sketch", ios::binary);
 
     file_min_read.read((char *)&min_sketch, sizeof(min_sketch));
@@ -24,6 +34,7 @@ void read_min_sketch() {
     for(int i = 0; i < num_hash; i++){
         cout<<min_sketch[i]<<" ";
     }
+    file_min_read.close();
 }
 
 void read_bloom_filter(string ref_genome) {
@@ -42,11 +53,14 @@ void read_bloom_filter(string ref_genome) {
         }
     }
 
+    file_bloom.close();
+
+    cout<<"\n count is "<<count;
 }
 
 
 void read_reference_genome(string reference_genome) {
-    vector<uint64_t> reference_genome_min_sketch(1000);
+    vector<uint64_t> reference_genome_min_sketch(num_hash, LLONG_MAX);
     string kmer;
     int ref_size = reference_genome.size();
 
@@ -93,6 +107,7 @@ void read_reference_genome(string reference_genome) {
 
     read_bloom_filter(reference_genome);
     read_min_sketch();
+
 }
 
 
@@ -151,7 +166,7 @@ int main(int argc, char *argv[]) {
     reference_file = "reference_genome.txt";
     false_positive = 0.01;
     kmer_size = 16;
-    num_hash = 100;
+    num_hash = 10;
 
     generate_seeds();
     read_dataset(reference_file);
