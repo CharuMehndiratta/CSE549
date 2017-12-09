@@ -1,6 +1,12 @@
+#include <iostream>
+#include "utils.h"
+#include <vector>
+#include <string.h>
+#include <cstring>
+#include "MurmurHash3.h"
 
+using namespace std;
 
-vector<uint64_t> seeds;
 void generate_seeds() {
     srand (time(NULL));
     for (int i = 0; i < num_hash; i++) {
@@ -17,7 +23,7 @@ uint64_t get_integer_fingerprint(string shingle, int hash_num) {
     return (hash_output[0] +  num_hash * hash_output[1]) % LARGE_PRIME;
 }
 
-void generate_sketch(string shingle) {
+void generate_sketch(string shingle, vector<uint64_t> min_sketch) {
 
     for (int i = 0; i < num_hash; i++) {
         uint64_t min_mer = LLONG_MAX;

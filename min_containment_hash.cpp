@@ -8,19 +8,11 @@
 #include <string.h>
 #include <sstream>
 #include <unistd.h>
-
-#define LARGE_PRIME 9999999999971
+#include "utils.h"
 
 using namespace std;
 
-/* Number of hash functions, false positive and kmer size with default values */
-double false_positive = 0.001;
-int kmer_size = 16;
-int num_hash = 100;
 string reference_file;
-vector<uint64_t> min_sketch(1000);
-
-// https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
 
 void read_min_sketch() {
 
@@ -53,38 +45,12 @@ void read_bloom_filter(string ref_genome) {
 }
 
 
-void read_dataset(string filename) {
-
-    string sequence, line;
-    ifstream file (filename);
-
-    if (file.is_open()) {
-        getline(file, line);
-        while (getline(file, line)) {
-            if (line[0] != '>') {
-
-                read_reference_genome(line);
-
-            //     sequence += line;
-            // } else {
-            //     cout<<"\n hello";
-                
-            //     sequence = "";
-            }
-        }
-    } else {
-        cout << "Unable to open file\n";
-        exit(EXIT_FAILURE);
-    }
-    file.close();
-}
-
-
 void read_reference_genome(string reference_genome) {
+    vector<uint64_t> reference_genome_min_sketch(1000);
     string kmer;
     int ref_size = reference_genome.size();
 
-    ofstream min_sketch_file("min_sketch.txt");
+    ofstream min_sketch_file("min_sketch", ios::binary);
     fstream bloom_filter_file("bloom_filter", ios::binary);
 
     bloom_parameters parameters;
@@ -111,7 +77,7 @@ void read_reference_genome(string reference_genome) {
         kmer = reference_genome.substr(i, kmer_size);
 
         //Adding kmers to min hash
-        generate_sketch(kmer);
+        generate_sketch(kmer, reference_genome_min_sketch);
 
         // Adding kmers to bloom filter
         if (!filter.contains(kmer)) {
@@ -120,20 +86,41 @@ void read_reference_genome(string reference_genome) {
         }
     }
 
-    //Writing min_sketch to file
-    // for(int count = 0; count < num_hash; count ++){
-    //     min_sketch_file << min_sketch[count] << " " ;
-    // }
-    // min_sketch_file << "\n";
-
-    min_sketch_file.write((char*)&min_sketch, sizeof(min_sketch));
+    min_sketch_file.write((char*)&reference_genome_min_sketch, sizeof(reference_genome_min_sketch));
 
     // Writing bloom filter to file
     bloom_filter_file.write((char*)&filter, sizeof(filter));
 
     read_bloom_filter(reference_genome);
     read_min_sketch();
-}   
+}
+
+
+void read_dataset(string filename) {
+
+    string sequence, line;
+    ifstream file (filename);
+
+    if (file.is_open()) {
+        getline(file, line);
+        while (getline(file, line)) {
+            if (line[0] != '>') {
+
+                read_reference_genome(line);
+
+            //     sequence += line;
+            // } else {
+            //     cout<<"\n hello";
+                
+            //     sequence = "";
+            }
+        }
+    } else {
+        cout << "Unable to open file\n";
+        exit(EXIT_FAILURE);
+    }
+    file.close();
+}
 
 /*************************************************************/
 /* Start execution                                           */
@@ -168,10 +155,6 @@ int main(int argc, char *argv[]) {
 
     generate_seeds();
     read_dataset(reference_file);
-
-
-
-
 
 
     return 0;
