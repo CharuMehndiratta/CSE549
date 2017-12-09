@@ -17,6 +17,23 @@ int num_hash;
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
 vector<uint64_t> seeds;
 
+string reference_genome_file = "reference_genome.txt";
+
+string reference_genome_min_sketch_file = "reference_genome_min_sketch_file";
+
+string reference_genome_bloom_filter_file = "reference_genome_bloom_filter_file";
+
+string seeds_file = "seeds.txt";
+
+string long_read_file = "long_read.txt";
+
+string long_read_min_sketch_file = "long_read_min_sketch_file";
+
+string min_hash_output = "min_hash_output.txt";
+
+string long_read_containment_hash_file = "long_read_containment_hash_file.txt";
+
+
 void generate_seeds() {
     srand (time(NULL));
     for (int i = 0; i < num_hash; i++) {
@@ -45,3 +62,5 @@ void generate_sketch(string shingle, vector<uint64_t> &min_sketch) {
     }
 
 }
+
+

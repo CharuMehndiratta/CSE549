@@ -22,25 +22,16 @@ extern int num_hash;
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
 extern vector<uint64_t> seeds;
 
-string reference_file;
+extern string reference_genome_file;
 
-void read_min_sketch() {
+extern string reference_genome_min_sketch_file;
 
-    vector<uint64_t> min_sketch(num_hash, LLONG_MAX);
-    ifstream file_min_read("min_sketch", ios::binary);
-
-    file_min_read.read((char *)&min_sketch, sizeof(min_sketch));
-
-    for(int i = 0; i < num_hash; i++){
-        cout<<min_sketch[i]<<" ";
-    }
-    file_min_read.close();
-}
+extern string reference_genome_bloom_filter_file;
 
 void read_bloom_filter(string ref_genome) {
 
     bloom_filter ref_filter;
-    ifstream file_bloom("bloom_filter", ios::binary);
+    ifstream file_bloom(reference_genome_bloom_filter_file, ios::binary);
 
     file_bloom.read((char *)&ref_filter, sizeof(ref_filter));
     int ref_size = ref_genome.size(), count = 0;
@@ -64,8 +55,8 @@ void read_reference_genome(string reference_genome) {
     string kmer;
     int ref_size = reference_genome.size();
 
-    ofstream min_sketch_file("min_sketch", ios::binary);
-    fstream bloom_filter_file("bloom_filter", ios::binary);
+    ofstream min_sketch_file(reference_genome_min_sketch_file, ios::binary);
+    fstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
 
     bloom_parameters parameters;
 
@@ -105,8 +96,8 @@ void read_reference_genome(string reference_genome) {
     // Writing bloom filter to file
     bloom_filter_file.write((char*)&filter, sizeof(filter));
 
-    read_bloom_filter(reference_genome);
-    read_min_sketch();
+    // read_bloom_filter(reference_genome);
+    // read_min_sketch();
 
 }
 
@@ -163,13 +154,12 @@ int main(int argc, char *argv[]) {
     //     }
     // }
 
-    reference_file = "reference_genome.txt";
     false_positive = 0.01;
     kmer_size = 16;
     num_hash = 10;
 
     generate_seeds();
-    read_dataset(reference_file);
+    read_dataset(reference_genome_file);
 
 
     return 0;
