@@ -8,28 +8,138 @@
 #include <string.h>
 #include <sstream>
 #include <unistd.h>
-#include "utils.h"
+// #include "utils.h"
 #include <stdio.h>
 
 using namespace std;
 
 /* Number of hash functions, false positive and kmer size with default values */
-extern double false_positive;
+double false_positive;
 
-extern int kmer_size;
+int kmer_size;
 
-extern int num_hash;
+int num_hash;
 
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
-extern vector<uint64_t> seeds;
+vector<uint64_t> seeds;
 
-extern string reference_genome_file;
+string reference_genome_file;
 
-extern string reference_genome_min_sketch_file;
+string reference_genome_min_sketch_file;
 
-extern string reference_genome_size_file;
+string reference_genome_bloom_filter_file;
 
-extern string reference_genome_bloom_filter_file;
+string reference_genome_size_file;
+
+string seeds_file;
+
+string index_file;
+
+#define LARGE_PRIME 9999999999971
+
+
+
+void clear_file_content(string file){
+    ofstream file_to_clear(file, fstream::trunc);
+    file_to_clear.close();
+}
+
+
+
+void clear_initial_files(){
+    clear_file_content(index_file);
+    clear_file_content(reference_genome_min_sketch_file);
+    clear_file_content(reference_genome_bloom_filter_file);
+    clear_file_content(reference_genome_size_file);
+    clear_file_content(seeds_file);
+}
+
+
+
+
+void set_initial_data(){
+
+    reference_genome_min_sketch_file = "reference_genome_min_sketch_file.txt";
+    reference_genome_bloom_filter_file  = "reference_genome_bloom_filter_file";
+    reference_genome_size_file  = "reference_genome_size_file.txt";
+    seeds_file  = "seeds.txt";
+    index_file  = "intermediate_file.txt";
+}
+
+
+
+
+void set_intermediate_file(){
+
+    ofstream index_file_name;
+    index_file_name.open(index_file);
+    string line = "";
+
+    //Write kmer_size on intermediate file
+    line = "kmer_size " + to_string(kmer_size);
+    index_file_name << line << "\n";
+    line.clear();
+
+    line = "false_positive " + to_string(false_positive);
+    index_file_name << line << "\n";
+    line.clear();
+
+    line = "num_hash " + to_string(num_hash);
+    index_file_name << line << "\n";
+    line.clear();
+
+}
+
+
+
+void generate_seeds() {
+
+    ofstream seed_file_ref;
+    seed_file_ref.open(seeds_file);
+    srand (time(NULL));
+    for (int i = 0; i < num_hash; i++) {
+        uint64_t val = rand();
+        seeds.push_back(val);
+        seed_file_ref << val << " ";
+    }
+    seed_file_ref << "\n";
+    seed_file_ref.close();
+}
+
+
+
+
+
+uint64_t get_integer_fingerprint(string shingle, int hash_num) {
+    const char *key = shingle.c_str();
+    uint64_t hash_output[2];
+
+    MurmurHash3_x64_128(key, (uint64_t)strlen(key), seeds[hash_num], hash_output);
+
+    return (hash_output[0] +  num_hash * hash_output[1]) % LARGE_PRIME;
+
+    return 1;
+
+}
+
+
+
+
+
+void generate_sketch(string shingle, vector<uint64_t> &min_sketch) {
+
+    for (int i = 0; i < num_hash; i++) {
+        uint64_t min_mer = LLONG_MAX;
+        uint64_t hash_value = get_integer_fingerprint(shingle, i);
+
+        if (hash_value < min_sketch[i]) {
+            min_sketch[i] = hash_value;
+        }
+    }
+
+}
+
+
 
 void read_bloom_filter(string ref_genome) {
 
@@ -50,6 +160,8 @@ void read_bloom_filter(string ref_genome) {
     file_bloom.close();
 
 }
+
+
 
 
 void read_reference_genome(string reference_genome) {
@@ -102,14 +214,14 @@ void read_reference_genome(string reference_genome) {
      min_sketch_file.close();
 
     cout<<"\n writing to bloom filter";
-    // Writing bloom filter to file
 
     bloom_filter_file.write((char*)&filter, sizeof(filter));
 
-    // read_bloom_filter(reference_genome);
-    // read_min_sketch();
-
 }
+
+
+
+
 
 void read_dataset(string filename) {
 
@@ -148,6 +260,10 @@ void read_dataset(string filename) {
     file.close();
 }
 
+
+
+
+
 /*************************************************************/
 /* Start execution                                           */
 /*************************************************************/
@@ -155,32 +271,31 @@ int main(int argc, char *argv[]) {
     int option;
 
     /* Get options from command line arguments */
-    // while ((option = getopt(argc, argv, "r:f:k:h:")) != -1) {
-    //     switch (option) {
-    //         case 'r':
-    //             reference_file = optarg;
-    //             break;
-    //         case 'f':
-    //             false_positive = atof(optarg);
-    //             break;
-    //         case 'k':
-    //             kmer_size = atoi(optarg);
-    //             break;
-    //         case 'h':
-    //             num_hash = atoi(optarg);
-    //             break;
-    //         default:
-    //             exit(EXIT_FAILURE);
-    //     }
-    // }
+    while ((option = getopt(argc, argv, "r:f:k:h:")) != -1) {
+        switch (option) {
+            case 'r':
+                reference_genome_file = optarg;
+                break;
+            case 'f':
+                false_positive = atof(optarg);
+                break;
+            case 'k':
+                kmer_size = atoi(optarg);
+                break;
+            case 'h':
+                num_hash = atoi(optarg);
+                break;
+            default:
+                exit(EXIT_FAILURE);
+        }
+    }
 
-    false_positive = 0.01;
-    kmer_size = 10;
-    num_hash = 10;
 
+    clear_initial_files();
+    set_initial_data();
     generate_seeds();
     read_dataset(reference_genome_file);
-
+    set_intermediate_file();
 
     return 0;
 }

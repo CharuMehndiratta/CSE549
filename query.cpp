@@ -5,38 +5,116 @@
 #include <iomanip>
 #include <sstream>
 #include "MurmurHash3.h"
-#include "utils.h"
+// #include "utils.h"
 #include "BloomFilter.hpp"
 
 using namespace std;
 
 /* Number of hash functions, false positive and kmer size with default values */
-extern double false_positive;
+ double false_positive;
 
-extern int kmer_size;
+ int kmer_size;
 
-extern int num_hash;
+ int num_hash;
 
-extern string min_hash_output;
+vector<uint64_t> seeds;
 
-extern string reference_genome_min_sketch_file;
+string min_hash_output;
 
-extern string reference_genome_bloom_filter_file;
+string reference_genome_min_sketch_file;
 
-extern string reference_genome_size_file;
+string reference_genome_bloom_filter_file;
 
-extern string long_read_file;
+string reference_genome_size_file;
 
-extern string containment_hash_output;
+string long_read_file;
 
-extern string seed_file;
+string containment_hash_output;
+
+string seeds_file;
+
+string index_file;
+
+#define LARGE_PRIME 9999999999971
 
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
-extern vector<uint64_t> seeds;
+
+
+
+
+void clear_file_content(string file){
+    ofstream file_to_clear(file, fstream::trunc);
+    file_to_clear.close();
+}
+
+
+
+
+void clear_initial_files(){
+    clear_file_content(min_hash_output);
+    clear_file_content(containment_hash_output);
+}
+
+
+uint64_t get_integer_fingerprint(string shingle, int hash_num) {
+    const char *key = shingle.c_str();
+    uint64_t hash_output[2];
+
+    MurmurHash3_x64_128(key, (uint64_t)strlen(key), seeds[hash_num], hash_output);
+
+    return (hash_output[0] +  num_hash * hash_output[1]) % LARGE_PRIME;
+
+    return 1;
+
+}
+
+
+
+
+void generate_sketch(string shingle, vector<uint64_t> &min_sketch) {
+
+    for (int i = 0; i < num_hash; i++) {
+        uint64_t min_mer = LLONG_MAX;
+        uint64_t hash_value = get_integer_fingerprint(shingle, i);
+
+        if (hash_value < min_sketch[i]) {
+            min_sketch[i] = hash_value;
+        }
+    }
+
+}
+
+
+void read_index_file(){
+    ifstream ref_index_file(index_file);
+    string line = "";
+    while(getline(ref_index_file, line)){
+        stringstream ss(line); 
+        string val;
+        ss >> val;
+        if(val.compare("kmer_size") == 0){
+            ss >> kmer_size;
+        }
+        else if(val.compare("false_positive") == 0){
+            ss >> false_positive;
+        }
+        else if(val.compare("num_hash") == 0){
+            ss >> num_hash;
+        }
+        else {
+            cout << "index_file corrupted\n";
+        }
+
+    }
+
+
+}
+
+
 
 void read_seed_file() {
 
-    ifstream seed_file_ref(seed_file);
+    ifstream seed_file_ref(seeds_file);
     for(int i = 0; i < num_hash; i++ ) {
         uint64_t val;
         seed_file_ref >> val;
@@ -62,6 +140,21 @@ double min_hash_jaccard_estimate(vector <uint64_t> sketch1, vector <uint64_t> sk
 
     return ((double)common / sketch_size);
 }
+
+
+
+
+
+void set_initial_data(){
+
+    reference_genome_min_sketch_file = "reference_genome_min_sketch_file.txt";
+    reference_genome_bloom_filter_file  = "reference_genome_bloom_filter_file";
+    reference_genome_size_file  = "reference_genome_size_file.txt";
+    seeds_file  = "seeds.txt";
+    min_hash_output = "min_hash_output.txt";
+    containment_hash_output = "containment_hash_output.txt";
+}
+
 
 
 /*************************************************************/
@@ -94,7 +187,8 @@ void min_hash(string long_read){
     
     string line = "";
     
-    ofstream min_hash_output_file(min_hash_output, fstream::app);
+    fstream min_hash_output_file(min_hash_output, ios::app);
+
     ifstream genome_sketch(reference_genome_min_sketch_file, ios::binary);
 
     while(getline(genome_sketch, line)){
@@ -110,9 +204,13 @@ void min_hash(string long_read){
         min_hash_output_file <<  min_hash_jaccard_index << " ";
         genome_min_sketch.clear();
     }
+    min_hash_output_file << "\n";
     min_hash_output_file.close();
     genome_sketch.close();
 }
+
+
+
 
 double containment_jaccard_estimate(int sequence1_size, string sequence2, vector <string> sketch2, bloom_filter filter) {
 
@@ -132,6 +230,8 @@ double containment_jaccard_estimate(int sequence1_size, string sequence2, vector
 
     return ((double)(containment_estimate * size_sequence2_set)) / (size_sequence1_set + size_sequence2_set - size_sequence2_set * containment_estimate);
 }
+
+
 
 vector<string> generate_kmer_sketch(vector <string> shingles) {
     int num_shingles = shingles.size();
@@ -170,7 +270,11 @@ vector<string> generate_shingles(string sequence) {
     return shingles;
 }
 
+
+
+
 void containment_hash(string long_read) {
+
     bloom_filter ref_bloom_filter;
     int count = 0, size;
     string line, kmer;
@@ -205,10 +309,6 @@ void containment_hash(string long_read) {
 }
 
 
-void clear_file_content(string file){
-    ofstream file_to_clear(file, fstream::trunc);
-    file_to_clear.close();
-}
 
 /*************************************************************/
 /*   This function takes a long read as input and calls      */
@@ -217,10 +317,10 @@ void clear_file_content(string file){
 /*************************************************************/
 void generate_jacard_index(string long_read) {
     //true_jacard(long_read);
-    read_seed_file();
     min_hash(long_read);
     containment_hash(long_read);
 }
+
 
 void read_dataset(string filename) {
 
@@ -250,31 +350,26 @@ void read_dataset(string filename) {
 /* Start execution                                           */
 /*************************************************************/
 int main(int argc, char *argv[]) {
+
     int option;
-    // char *long_read_file = NULL, *bloom_filter_file = NULL, *min_sketch_file = NULL;
+   
+     while ((option = getopt(argc, argv, "r:i:")) != -1) {
+        switch (option) {
+            case 'r':
+                long_read_file = optarg;
+                break;
+            case 'i':
+                index_file = optarg;
+                break;
+            default:
+                exit(EXIT_FAILURE);
+        }
+    }
 
-    /* Get options from command line arguments */
-    // while ((option = getopt(argc, argv, "r:b:m")) != -1) {
-    //     switch (option) {
-    //         case 'r':
-    //             long_read_file = optarg;
-    //             break;
-    //         case 'b':
-    //             bloom_filter_file = optarg;
-    //             break;
-    //         case 'm':
-    //             min_sketch_file = optarg;
-    //             break;
-    //         default:
-    //             exit(EXIT_FAILURE);
-    //     }
-    // }
-
-    false_positive = 0.01;
-    kmer_size = 15;
-    num_hash = 10;
-    clear_file_content(min_hash_output);
-    clear_file_content(containment_hash_output);
+    set_initial_data();
+    clear_initial_files();
+    read_index_file();
+    read_seed_file();
 
     read_dataset(long_read_file);
 

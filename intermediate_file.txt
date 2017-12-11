@@ -1,0 +1,3 @@
+kmer_size 16
+false_positive 0.010000
+num_hash 10
