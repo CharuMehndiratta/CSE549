@@ -29,11 +29,34 @@ extern string long_read_file;
 
 extern string containment_hash_output;
 
+extern string seed_file;
+
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
 extern vector<uint64_t> seeds;
 
 
+
+
+
+void read_seed_file() {
+
+    ifstream seed_file_ref(seed_file);
+    for(int i = 0; i < num_hash; i++ ) {
+        uint64_t val;
+        seed_file_ref >> val;
+        seeds.push_back(val);
+    }
+    seed_file_ref.close();
+}
+
+/*************************************************************/
+/*  Input:   long_read and reference hash signature          */
+/*  output:   jaccard index between the input signatures.    */
+/*************************************************************/
+
 double min_hash_jaccard_estimate(vector <uint64_t> sketch1, vector <uint64_t> sketch2){
+
+    cout << "min_hash_jaccard_estimate\n";
     int sketch_size = sketch1.size(), common = 0;
 
     for (int i = 0; i < sketch1.size(); i++) {
@@ -45,31 +68,58 @@ double min_hash_jaccard_estimate(vector <uint64_t> sketch1, vector <uint64_t> sk
     return ((double)common / sketch_size);
 }
 
+
+/*************************************************************/
+/*  Input:   min_hash signature reference, long_read         */
+/*  output:  min_hash signature on all k-mers of long_read   */
+/*************************************************************/
 void gen_read_sketch(vector<uint64_t> & sketch, string read){
+
+    // cout << "gen_read_sketch\n";
 
     int size = read.size();
     for(int i = 0; i < size - num_hash + 1; i++){
         string kmer = read.substr(i, kmer_size);
         generate_sketch(kmer, sketch);
     }
+    // cout << "gen_read_sketch\n";
 }
 
-// Input long read and generates jaccard index using min hash
+
+
+
+/*************************************************************/
+/*  Input: long read                                         */
+/*  output: jaccard index of long_read input with all the.   */
+/*    genome references                                      */
+/*************************************************************/
 void min_hash(string long_read){
+        
+    // cout << "min_hash\n";
+
     vector<uint64_t> long_read_sketch(num_hash, LLONG_MAX);
     vector<uint64_t> genome_min_sketch;
     double min_hash_jaccard_index;
+    read_seed_file();
     gen_read_sketch(long_read_sketch, long_read);
-
-    ofstream min_hash_output_file(min_hash_output);
-
-    // Reading reference genome min hash sketches 
+    string line = "";
+    
+    ofstream min_hash_output_file(min_hash_output, fstream::app);
     ifstream genome_sketch(reference_genome_min_sketch_file, ios::binary);
 
-    while(genome_sketch.read((char *)&genome_min_sketch, sizeof(genome_min_sketch)) != NULL) {
-        min_hash_jaccard_index =  min_hash_jaccard_estimate(genome_min_sketch, long_read_sketch);
-        min_hash_output_file << min_hash_jaccard_index << " ";
+    while(getline(genome_sketch, line)){
+
+        stringstream liness(line);
+        uint64_t val;
+        while(liness >> val){
+            genome_min_sketch.push_back(val);
+        }
+
+        min_hash_jaccard_index = min_hash_jaccard_estimate(long_read_sketch, genome_min_sketch);
+        min_hash_output_file <<  min_hash_jaccard_index << " ";
+        genome_min_sketch.clear();
     }
+
 }
 
 double containment_jaccard_estimate(int sequence1_size, string sequence2, vector <string> sketch2, bloom_filter filter) {
@@ -110,6 +160,12 @@ vector<string> generate_kmer_sketch(vector <string> shingles) {
     return sketch;
 }
 
+
+
+/*************************************************************/
+/*  Input: long read, kmer size                              */
+/*  output: kmer sized shingles stored in a vector<string>   */
+/*************************************************************/
 vector<string> generate_shingles(string sequence, int kmer_size) {
     int size = sequence.size();
     vector <string> shingles;
@@ -153,12 +209,18 @@ void containment_hash(string long_read) {
 
 }
 
+
+/*************************************************************/
+/*   This function takes a long read as input and calls      */
+/*    min_hash and containment hash function to calculate    */
+/*    jaccard similarity                                     */
+/*************************************************************/
 void generate_jacard_index(string long_read) {
 
 
     //true_jacard(long_read);
-    // min_hash(long_read);
-    containment_hash(long_read);
+    min_hash(long_read);
+    //containment_hash(long_read);
 
 }
 
@@ -205,6 +267,11 @@ int main(int argc, char *argv[]) {
     //             exit(EXIT_FAILURE);
     //     }
     // }
+
+
+    false_positive = 0.01;
+    kmer_size = 16;
+    num_hash = 10;
 
     read_dataset(long_read_file);
 

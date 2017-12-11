@@ -4,6 +4,7 @@
 #include <string.h>
 #include <cstring>
 #include "MurmurHash3.h"
+#include <fstream>
 
 using namespace std;
 
@@ -19,7 +20,7 @@ vector<uint64_t> seeds;
 
 string reference_genome_file = "reference_genome.txt";
 
-string reference_genome_min_sketch_file = "reference_genome_min_sketch_file";
+string reference_genome_min_sketch_file = "reference_genome_min_sketch_file.txt";
 
 string reference_genome_bloom_filter_file = "reference_genome_bloom_filter_file";
 
@@ -37,13 +38,23 @@ string long_read_containment_hash_file = "long_read_containment_hash_file.txt";
 
 string reference_genome_size_file = "reference_genome_size_file.txt";
 
+string seed_file = "seed_file.txt";
+
 
 void generate_seeds() {
+
+    ofstream seed_file_ref;
+    seed_file_ref.open(seed_file);
     srand (time(NULL));
     for (int i = 0; i < num_hash; i++) {
-        seeds.push_back(rand());
+        uint64_t val = rand();
+        seeds.push_back(val);
+        seed_file_ref << val << " ";
     }
+    seed_file_ref << "\n";
+    seed_file_ref.close();
 }
+
 
 uint64_t get_integer_fingerprint(string shingle, int hash_num) {
     const char *key = shingle.c_str();

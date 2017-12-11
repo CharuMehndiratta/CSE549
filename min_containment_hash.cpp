@@ -34,7 +34,7 @@ extern string reference_genome_size_file;
 void read_bloom_filter(string ref_genome) {
 
     bloom_filter ref_filter;
-    ifstream file_bloom(reference_genome_bloom_filter_file, ios::binary);
+    fstream file_bloom(reference_genome_bloom_filter_file, ios::binary);
 
     file_bloom.read((char *)&ref_filter, sizeof(ref_filter));
     int ref_size = ref_genome.size(), count = 0;
@@ -49,7 +49,6 @@ void read_bloom_filter(string ref_genome) {
 
     file_bloom.close();
 
-    cout<<"\n count is "<<count;
 }
 
 
@@ -58,8 +57,11 @@ void read_reference_genome(string reference_genome) {
     string kmer;
     int ref_size = reference_genome.size();
 
-    ofstream min_sketch_file(reference_genome_min_sketch_file, ios::binary);
-    fstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
+
+    cout << reference_genome << "\n\n\n\n\n\n\n\n\n\n\n";
+
+    ofstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
+    ofstream min_sketch_file(reference_genome_min_sketch_file, fstream::app);
 
     bloom_parameters parameters;
 
@@ -94,9 +96,17 @@ void read_reference_genome(string reference_genome) {
         }
     }
 
-    min_sketch_file.write((char*)&reference_genome_min_sketch, sizeof(reference_genome_min_sketch));
+     
 
+     for(int i = 0; i < num_hash; i++){
+        min_sketch_file << reference_genome_min_sketch[i] << " ";
+     }
+     min_sketch_file << "\n";
+     min_sketch_file.close();
+
+     
     // Writing bloom filter to file
+
     bloom_filter_file.write((char*)&filter, sizeof(filter));
 
     // read_bloom_filter(reference_genome);
@@ -116,8 +126,6 @@ void read_dataset(string filename) {
     if (file.is_open()) {
         while (getline(file, line)) {
             if (line[0] != '>') {
-
-                cout<<"\n line is "<<line;
 
                 ref_file << to_string(line.size());
                 ref_file << " ";
