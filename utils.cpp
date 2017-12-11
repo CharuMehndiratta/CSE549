@@ -57,13 +57,12 @@ void generate_seeds() {
 
 
 uint64_t get_integer_fingerprint(string shingle, int hash_num) {
-    // cout<<"\n here";
     const char *key = shingle.c_str();
     uint64_t hash_output[2];
 
-    // MurmurHash3_x64_128(key, (uint64_t)strlen(key), seeds[hash_num], hash_output);
+    MurmurHash3_x64_128(key, (uint64_t)strlen(key), seeds[hash_num], hash_output);
 
-    // return (hash_output[0] +  num_hash * hash_output[1]) % LARGE_PRIME;
+    return (hash_output[0] +  num_hash * hash_output[1]) % LARGE_PRIME;
 
     return 1;
 

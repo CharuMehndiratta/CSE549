@@ -80,8 +80,6 @@ void gen_read_sketch(vector<uint64_t> & sketch, string read){
 }
 
 
-
-
 /*************************************************************/
 /*  Input: long read                                         */
 /*  output: jaccard index of long_read input with all the.   */
@@ -92,7 +90,6 @@ void min_hash(string long_read){
     vector<uint64_t> long_read_sketch(num_hash, LLONG_MAX);
     vector<uint64_t> genome_min_sketch;
     double min_hash_jaccard_index;
-    read_seed_file();
     gen_read_sketch(long_read_sketch, long_read);
     
     string line = "";
@@ -118,16 +115,14 @@ void min_hash(string long_read){
 }
 
 double containment_jaccard_estimate(int sequence1_size, string sequence2, vector <string> sketch2, bloom_filter filter) {
+
     int intersections = 0;
     int sketch_size = sketch2.size();
-    cout<<"\n sketch_size "<<sketch_size;
     for (int i = 0; i < sketch_size; i++) {
-        cout<<sketch2[i];
         if (filter.contains(sketch2[i])) {
             intersections++;
         }
     }
-    cout<<"\n inetrsection "<<intersections;
     intersections -= false_positive * sketch_size;
 
     double containment_estimate = ((double)intersections / sketch_size);
@@ -142,17 +137,15 @@ vector<string> generate_kmer_sketch(vector <string> shingles) {
     int num_shingles = shingles.size();
     vector <string> sketch;
 
-    cout<<"\n num shingles "<<num_shingles;
-
     for (int i = 0; i < num_hash; i++) {
         uint64_t min_mer = LLONG_MAX;
         string kmer;
         for (int j = 0; j < num_shingles; j++) {
             uint64_t hash_value = get_integer_fingerprint(shingles[j], i);
-            // if (hash_value < min_mer) {
-            //     min_mer = hash_value;
-            //     kmer = shingles[j];
-            // }
+            if (hash_value < min_mer) {
+                min_mer = hash_value;
+                kmer = shingles[j];
+            }
         }
         sketch.push_back(kmer);
     }
@@ -179,12 +172,12 @@ vector<string> generate_shingles(string sequence) {
 
 void containment_hash(string long_read) {
     bloom_filter ref_bloom_filter;
-    int count = 0;
+    int count = 0, size;
     string line, kmer;
     double jaccard_estimate;
 
     ifstream ref_genome_size_file(reference_genome_size_file);
-    ofstream containment_hash_output_file(containment_hash_output);
+    ofstream containment_hash_output_file(containment_hash_output, ios::app);
     fstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
 
     getline(ref_genome_size_file, line);
@@ -195,28 +188,19 @@ void containment_hash(string long_read) {
     vector <string> shingles_long_read;
     vector <string> sketch_long_read;
 
-    cout<<"\n long read "<<long_read<<"\n";
-
     shingles_long_read = generate_shingles(long_read);
     sketch_long_read   = generate_kmer_sketch(shingles_long_read);
 
-    // for(int i = 0; i<shingles_long_read.size() ;i++) {
-    //     cout<<shingles_long_read[i];
-    // }
+    stringstream lines(line);
 
-    // stringstream lines(line);
-
-    // int size;
-
-    // while (lines >> size) {
-    //     cout<<"\n size "<<size;
-    //     jaccard_estimate = containment_jaccard_estimate(size, long_read, sketch_long_read, ref_bloom_filter);
-    //     cout<< jaccard_estimate;
-    //     containment_hash_output_file << to_string(jaccard_estimate) << " ";
-    // }
-    // bloom_filter_file.close();
-    // ref_genome_size_file.close();
-    // containment_hash_output_file.close();
+    while (lines >> size) {
+        jaccard_estimate = containment_jaccard_estimate(size, long_read, sketch_long_read, ref_bloom_filter);
+        containment_hash_output_file << to_string(jaccard_estimate) << " ";
+    }
+    containment_hash_output_file << "\n";
+    bloom_filter_file.close();
+    ref_genome_size_file.close();
+    containment_hash_output_file.close();
 
 }
 
@@ -232,14 +216,10 @@ void clear_file_content(string file){
 /*    jaccard similarity                                     */
 /*************************************************************/
 void generate_jacard_index(string long_read) {
-
-
-    clear_file_content(min_hash_output);
-    clear_file_content(containment_hash_output);
     //true_jacard(long_read);
+    read_seed_file();
     min_hash(long_read);
-    //containment_hash(long_read);
-
+    containment_hash(long_read);
 }
 
 void read_dataset(string filename) {
@@ -291,8 +271,10 @@ int main(int argc, char *argv[]) {
     // }
 
     false_positive = 0.01;
-    kmer_size = 10;
+    kmer_size = 15;
     num_hash = 10;
+    clear_file_content(min_hash_output);
+    clear_file_content(containment_hash_output);
 
     read_dataset(long_read_file);
 

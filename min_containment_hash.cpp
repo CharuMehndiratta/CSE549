@@ -106,7 +106,7 @@ void read_reference_genome(string reference_genome) {
 
     bloom_filter_file.write((char*)&filter, sizeof(filter));
 
-    read_bloom_filter(reference_genome);
+    // read_bloom_filter(reference_genome);
     // read_min_sketch();
 
 }
