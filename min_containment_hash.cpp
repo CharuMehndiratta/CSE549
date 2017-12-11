@@ -63,7 +63,7 @@ void set_initial_data(){
     reference_genome_bloom_filter_file  = "reference_genome_bloom_filter_file";
     reference_genome_size_file  = "reference_genome_size_file.txt";
     seeds_file  = "seeds.txt";
-    index_file  = "intermediate_file.txt";
+    index_file  = "index.txt";
 }
 
 
