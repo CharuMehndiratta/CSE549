@@ -57,11 +57,9 @@ void read_reference_genome(string reference_genome) {
     string kmer;
     int ref_size = reference_genome.size();
 
-
-    cout << reference_genome << "\n\n\n\n\n\n\n\n\n\n\n";
-
     ofstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
     ofstream min_sketch_file(reference_genome_min_sketch_file, fstream::app);
+
 
     bloom_parameters parameters;
 
@@ -119,19 +117,29 @@ void read_dataset(string filename) {
     int c = 0;
 
     ofstream ref_file(reference_genome_size_file);
+    
+    //Clear the content of genome_sketch_file if exist before writing new data 
+    ofstream min_sketch_file_clear(reference_genome_min_sketch_file, fstream::trunc);
+    min_sketch_file_clear.close();
 
     string sequence, line;
     ifstream file (filename);
 
+    string tmp = ""; 
     if (file.is_open()) {
-        while (getline(file, line)) {
-            if (line[0] != '>') {
+        while (getline(file, tmp)) {
+            if(tmp[0] == '>')
+                continue;
+            cout << "genome" << "\n";
+            line = tmp;
+            while(getline(file, tmp) && tmp[0] != '>')
+                line += tmp;
 
-                ref_file << to_string(line.size());
-                ref_file << " ";
-                read_reference_genome(line);
+            cout << line << " \n";
+            ref_file << to_string(line.size());
+            ref_file << " ";
+            read_reference_genome(line);
 
-            }
         }
     } else {
         cout << "Unable to open file\n";
@@ -168,7 +176,7 @@ int main(int argc, char *argv[]) {
     // }
 
     false_positive = 0.01;
-    kmer_size = 16;
+    kmer_size = 10;
     num_hash = 10;
 
     generate_seeds();

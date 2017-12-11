@@ -56,7 +56,6 @@ void read_seed_file() {
 
 double min_hash_jaccard_estimate(vector <uint64_t> sketch1, vector <uint64_t> sketch2){
 
-    cout << "min_hash_jaccard_estimate\n";
     int sketch_size = sketch1.size(), common = 0;
 
     for (int i = 0; i < sketch1.size(); i++) {
@@ -75,14 +74,13 @@ double min_hash_jaccard_estimate(vector <uint64_t> sketch1, vector <uint64_t> sk
 /*************************************************************/
 void gen_read_sketch(vector<uint64_t> & sketch, string read){
 
-    // cout << "gen_read_sketch\n";
-
     int size = read.size();
-    for(int i = 0; i < size - num_hash + 1; i++){
+    for(int i = 0; i < size - kmer_size + 1; i++){
         string kmer = read.substr(i, kmer_size);
         generate_sketch(kmer, sketch);
     }
-    // cout << "gen_read_sketch\n";
+
+    cout << "\n\n";
 }
 
 
@@ -95,13 +93,12 @@ void gen_read_sketch(vector<uint64_t> & sketch, string read){
 /*************************************************************/
 void min_hash(string long_read){
         
-    // cout << "min_hash\n";
-
     vector<uint64_t> long_read_sketch(num_hash, LLONG_MAX);
     vector<uint64_t> genome_min_sketch;
     double min_hash_jaccard_index;
     read_seed_file();
     gen_read_sketch(long_read_sketch, long_read);
+    
     string line = "";
     
     ofstream min_hash_output_file(min_hash_output, fstream::app);
@@ -116,6 +113,7 @@ void min_hash(string long_read){
         }
 
         min_hash_jaccard_index = min_hash_jaccard_estimate(long_read_sketch, genome_min_sketch);
+
         min_hash_output_file <<  min_hash_jaccard_index << " ";
         genome_min_sketch.clear();
     }
@@ -159,7 +157,6 @@ vector<string> generate_kmer_sketch(vector <string> shingles) {
 
     return sketch;
 }
-
 
 
 /*************************************************************/
@@ -210,6 +207,11 @@ void containment_hash(string long_read) {
 }
 
 
+void clear_file_content(string file){
+    ofstream file_to_clear(file, fstream::trunc);
+    file_to_clear.close();
+}
+
 /*************************************************************/
 /*   This function takes a long read as input and calls      */
 /*    min_hash and containment hash function to calculate    */
@@ -218,6 +220,8 @@ void containment_hash(string long_read) {
 void generate_jacard_index(string long_read) {
 
 
+    clear_file_content(min_hash_output);
+    clear_file_content(containment_hash_output);
     //true_jacard(long_read);
     min_hash(long_read);
     //containment_hash(long_read);
@@ -226,15 +230,19 @@ void generate_jacard_index(string long_read) {
 
 void read_dataset(string filename) {
 
-    string sequence, line;
+    string sequence, line, tmp = "";
     ifstream file (filename);
 
     if (file.is_open()) {
-        getline(file, line);
-        while (getline(file, line)) {
-            if (line[0] != '>') {
-                generate_jacard_index(line);
-            }
+        while (getline(file, tmp)) {
+            if (tmp[0] == '>')
+                continue;
+
+            line = tmp;
+            while(getline(file, tmp) && tmp[0] != '>')
+                line += tmp;
+
+            generate_jacard_index(line);
         }
     } else {
         cout << "Unable to open file\n";
@@ -270,7 +278,7 @@ int main(int argc, char *argv[]) {
 
 
     false_positive = 0.01;
-    kmer_size = 16;
+    kmer_size = 10;
     num_hash = 10;
 
     read_dataset(long_read_file);
