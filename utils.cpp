@@ -31,7 +31,11 @@ string long_read_min_sketch_file = "long_read_min_sketch_file";
 
 string min_hash_output = "min_hash_output.txt";
 
+string containment_hash_output = "containment_hash_output.txt";
+
 string long_read_containment_hash_file = "long_read_containment_hash_file.txt";
+
+string reference_genome_size_file = "reference_genome_size_file.txt";
 
 
 void generate_seeds() {
@@ -62,5 +66,3 @@ void generate_sketch(string shingle, vector<uint64_t> &min_sketch) {
     }
 
 }
-
-

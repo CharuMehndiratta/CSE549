@@ -9,6 +9,7 @@
 #include <sstream>
 #include <unistd.h>
 #include "utils.h"
+#include <stdio.h>
 
 using namespace std;
 
@@ -27,6 +28,8 @@ extern string reference_genome_file;
 extern string reference_genome_min_sketch_file;
 
 extern string reference_genome_bloom_filter_file;
+
+extern string reference_genome_size_file;
 
 void read_bloom_filter(string ref_genome) {
 
@@ -101,30 +104,32 @@ void read_reference_genome(string reference_genome) {
 
 }
 
-
 void read_dataset(string filename) {
+
+    int c = 0;
+
+    ofstream ref_file(reference_genome_size_file);
 
     string sequence, line;
     ifstream file (filename);
 
     if (file.is_open()) {
-        getline(file, line);
         while (getline(file, line)) {
             if (line[0] != '>') {
 
+                cout<<"\n line is "<<line;
+
+                ref_file << to_string(line.size());
+                ref_file << " ";
                 read_reference_genome(line);
 
-            //     sequence += line;
-            // } else {
-            //     cout<<"\n hello";
-                
-            //     sequence = "";
             }
         }
     } else {
         cout << "Unable to open file\n";
         exit(EXIT_FAILURE);
     }
+    ref_file.close();
     file.close();
 }
 
