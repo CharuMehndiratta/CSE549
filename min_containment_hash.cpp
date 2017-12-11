@@ -27,9 +27,9 @@ extern string reference_genome_file;
 
 extern string reference_genome_min_sketch_file;
 
-extern string reference_genome_bloom_filter_file;
-
 extern string reference_genome_size_file;
+
+extern string reference_genome_bloom_filter_file;
 
 void read_bloom_filter(string ref_genome) {
 
@@ -59,7 +59,6 @@ void read_reference_genome(string reference_genome) {
 
     ofstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
     ofstream min_sketch_file(reference_genome_min_sketch_file, fstream::app);
-
 
     bloom_parameters parameters;
 
@@ -102,12 +101,12 @@ void read_reference_genome(string reference_genome) {
      min_sketch_file << "\n";
      min_sketch_file.close();
 
-     
+    cout<<"\n writing to bloom filter";
     // Writing bloom filter to file
 
     bloom_filter_file.write((char*)&filter, sizeof(filter));
 
-    // read_bloom_filter(reference_genome);
+    read_bloom_filter(reference_genome);
     // read_min_sketch();
 
 }

@@ -34,10 +34,6 @@ extern string seed_file;
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
 extern vector<uint64_t> seeds;
 
-
-
-
-
 void read_seed_file() {
 
     ifstream seed_file_ref(seed_file);
@@ -117,17 +113,21 @@ void min_hash(string long_read){
         min_hash_output_file <<  min_hash_jaccard_index << " ";
         genome_min_sketch.clear();
     }
-
+    min_hash_output_file.close();
+    genome_sketch.close();
 }
 
 double containment_jaccard_estimate(int sequence1_size, string sequence2, vector <string> sketch2, bloom_filter filter) {
     int intersections = 0;
     int sketch_size = sketch2.size();
+    cout<<"\n sketch_size "<<sketch_size;
     for (int i = 0; i < sketch_size; i++) {
+        cout<<sketch2[i];
         if (filter.contains(sketch2[i])) {
             intersections++;
         }
     }
+    cout<<"\n inetrsection "<<intersections;
     intersections -= false_positive * sketch_size;
 
     double containment_estimate = ((double)intersections / sketch_size);
@@ -142,15 +142,17 @@ vector<string> generate_kmer_sketch(vector <string> shingles) {
     int num_shingles = shingles.size();
     vector <string> sketch;
 
+    cout<<"\n num shingles "<<num_shingles;
+
     for (int i = 0; i < num_hash; i++) {
         uint64_t min_mer = LLONG_MAX;
         string kmer;
         for (int j = 0; j < num_shingles; j++) {
             uint64_t hash_value = get_integer_fingerprint(shingles[j], i);
-            if (hash_value < min_mer) {
-                min_mer = hash_value;
-                kmer = shingles[j];
-            }
+            // if (hash_value < min_mer) {
+            //     min_mer = hash_value;
+            //     kmer = shingles[j];
+            // }
         }
         sketch.push_back(kmer);
     }
@@ -158,17 +160,18 @@ vector<string> generate_kmer_sketch(vector <string> shingles) {
     return sketch;
 }
 
-
 /*************************************************************/
 /*  Input: long read, kmer size                              */
 /*  output: kmer sized shingles stored in a vector<string>   */
 /*************************************************************/
-vector<string> generate_shingles(string sequence, int kmer_size) {
+vector<string> generate_shingles(string sequence) {
     int size = sequence.size();
     vector <string> shingles;
+    string kmer;
 
     for (int i = 0; i <= size - kmer_size; i++) {
-        shingles.push_back(sequence.substr(i, kmer_size));
+        kmer = sequence.substr(i, kmer_size);
+        shingles.push_back(kmer);
     }
 
     return shingles;
@@ -177,14 +180,14 @@ vector<string> generate_shingles(string sequence, int kmer_size) {
 void containment_hash(string long_read) {
     bloom_filter ref_bloom_filter;
     int count = 0;
-    ifstream ref_genome_size_file(reference_genome_size_file);
     string line, kmer;
     double jaccard_estimate;
+
+    ifstream ref_genome_size_file(reference_genome_size_file);
     ofstream containment_hash_output_file(containment_hash_output);
+    fstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
 
     getline(ref_genome_size_file, line);
-
-    ifstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
 
     bloom_filter_file.read((char *)&ref_bloom_filter, sizeof(ref_bloom_filter));
 
@@ -192,17 +195,28 @@ void containment_hash(string long_read) {
     vector <string> shingles_long_read;
     vector <string> sketch_long_read;
 
-    shingles_long_read = generate_shingles(long_read, kmer_size);
+    cout<<"\n long read "<<long_read<<"\n";
+
+    shingles_long_read = generate_shingles(long_read);
     sketch_long_read   = generate_kmer_sketch(shingles_long_read);
 
-    stringstream lines(line);
+    // for(int i = 0; i<shingles_long_read.size() ;i++) {
+    //     cout<<shingles_long_read[i];
+    // }
 
-    int size;
+    // stringstream lines(line);
 
-    while (lines >> size) {
-        jaccard_estimate = containment_jaccard_estimate(size, long_read, sketch_long_read, ref_bloom_filter);
-        containment_hash_output_file << jaccard_estimate << " ";
-    }
+    // int size;
+
+    // while (lines >> size) {
+    //     cout<<"\n size "<<size;
+    //     jaccard_estimate = containment_jaccard_estimate(size, long_read, sketch_long_read, ref_bloom_filter);
+    //     cout<< jaccard_estimate;
+    //     containment_hash_output_file << to_string(jaccard_estimate) << " ";
+    // }
+    // bloom_filter_file.close();
+    // ref_genome_size_file.close();
+    // containment_hash_output_file.close();
 
 }
 
@@ -275,7 +289,6 @@ int main(int argc, char *argv[]) {
     //             exit(EXIT_FAILURE);
     //     }
     // }
-
 
     false_positive = 0.01;
     kmer_size = 10;
