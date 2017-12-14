@@ -6,4 +6,4 @@ all:
 	g++ min_containment_hash.cpp MurmurHash3.cpp -o build_indices -I include/
 
 clean:
-	$(RM) query *.o *~
+	$(RM) query build_indices *.o *~
