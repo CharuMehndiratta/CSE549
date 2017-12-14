@@ -12,11 +12,11 @@
 using namespace std;
 
 /* Number of hash functions, false positive and kmer size with default values */
- double false_positive;
+double false_positive = 0.001;
 
- int kmer_size;
+int kmer_size = 11;
 
- int num_hash;
+int num_hash = 100;
 
 vector<uint64_t> seeds;
 
@@ -49,8 +49,6 @@ void clear_file_content(string file){
     ofstream file_to_clear(file, fstream::trunc);
     file_to_clear.close();
 }
-
-
 
 
 void clear_initial_files(){
@@ -170,8 +168,6 @@ void gen_read_sketch(vector<uint64_t> & sketch, string read){
         string kmer = read.substr(i, kmer_size);
         generate_sketch(kmer, sketch);
     }
-
-    cout << "\n\n";
 }
 
 
@@ -308,7 +304,7 @@ void true_jaccard(string long_read) {
         while (lines >> kmer) {
             reference_genome_shingles.push_back(kmer);
         }
-        cout << "\n" << true_jaccard_similarity(long_read, reference_genome_shingles);
+        true_jaccard_similarity(long_read, reference_genome_shingles);
     }
     reference_genome_kmer.close();
 }
