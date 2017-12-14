@@ -35,6 +35,8 @@ string seeds_file;
 
 string index_file;
 
+string reference_genome_kmer_file;
+
 #define LARGE_PRIME 9999999999971
 
 // https://stackoverflow.com/questions/9241230/what-is-murmurhash3-seed-parameter
@@ -69,8 +71,6 @@ uint64_t get_integer_fingerprint(string shingle, int hash_num) {
 }
 
 
-
-
 void generate_sketch(string shingle, vector<uint64_t> &min_sketch) {
 
     for (int i = 0; i < num_hash; i++) {
@@ -89,7 +89,7 @@ void read_index_file(){
     ifstream ref_index_file(index_file);
     string line = "";
     while(getline(ref_index_file, line)){
-        stringstream ss(line); 
+        stringstream ss(line);
         string val;
         ss >> val;
         if(val.compare("kmer_size") == 0){
@@ -153,6 +153,7 @@ void set_initial_data(){
     seeds_file  = "seeds.txt";
     min_hash_output = "min_hash_output.txt";
     containment_hash_output = "containment_hash_output.txt";
+    reference_genome_kmer_file = "reference_genome_kmer_file.txt";
 }
 
 
@@ -179,14 +180,14 @@ void gen_read_sketch(vector<uint64_t> & sketch, string read){
 /*    genome references                                      */
 /*************************************************************/
 void min_hash(string long_read){
-        
+
     vector<uint64_t> long_read_sketch(num_hash, LLONG_MAX);
     vector<uint64_t> genome_min_sketch;
     double min_hash_jaccard_index;
     gen_read_sketch(long_read_sketch, long_read);
-    
+
     string line = "";
-    
+
     fstream min_hash_output_file(min_hash_output, ios::app);
 
     ifstream genome_sketch(reference_genome_min_sketch_file, ios::binary);
@@ -271,6 +272,46 @@ vector<string> generate_shingles(string sequence) {
 }
 
 
+/*************************************************************/
+/* Generate Jaccard similarity between two sequences         */
+/* using conventional approach                               */
+/*************************************************************/
+
+double true_jaccard_similarity(string sequence1, vector <string> &shingles2) {
+    vector <string> shingles1, v;
+
+    shingles1 = generate_shingles(sequence1);
+
+    sort(shingles1.begin(), shingles1.end());
+    sort(shingles2.begin(), shingles2.end());
+
+    set_intersection(shingles1.begin(), shingles1.end(), shingles2.begin(), shingles2.end(), back_inserter(v));
+    int num_intersection = v.size();
+
+    v.clear();
+    set_union(shingles1.begin(), shingles1.end(), shingles2.begin(), shingles2.end(), back_inserter(v));
+    int num_union = v.size();
+
+    return ((double)num_intersection) / num_union;
+}
+
+void true_jaccard(string long_read) {
+
+    ifstream reference_genome_kmer(reference_genome_kmer_file);
+    string kmer;
+
+    string line;
+    while(getline(reference_genome_kmer, line)) {
+        stringstream lines(line);
+        vector <string> reference_genome_shingles;
+        while (lines >> kmer) {
+            reference_genome_shingles.push_back(kmer);
+        }
+        cout << "\n" << true_jaccard_similarity(long_read, reference_genome_shingles);
+    }
+    reference_genome_kmer.close();
+}
+
 
 
 void containment_hash(string long_read) {
@@ -309,14 +350,13 @@ void containment_hash(string long_read) {
 }
 
 
-
 /*************************************************************/
 /*   This function takes a long read as input and calls      */
 /*    min_hash and containment hash function to calculate    */
 /*    jaccard similarity                                     */
 /*************************************************************/
 void generate_jacard_index(string long_read) {
-    //true_jacard(long_read);
+    true_jaccard(long_read);
     min_hash(long_read);
     containment_hash(long_read);
 }
@@ -352,7 +392,7 @@ void read_dataset(string filename) {
 int main(int argc, char *argv[]) {
 
     int option;
-   
+
      while ((option = getopt(argc, argv, "r:i:")) != -1) {
         switch (option) {
             case 'r':

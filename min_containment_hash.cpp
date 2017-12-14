@@ -33,6 +33,8 @@ string seeds_file;
 
 string index_file;
 
+string reference_genome_kmer_file;
+
 void clear_file_content(string file) {
     ofstream file_to_clear(file, fstream::trunc);
     file_to_clear.close();
@@ -44,12 +46,14 @@ void clear_initial_files() {
     clear_file_content(reference_genome_bloom_filter_file);
     clear_file_content(reference_genome_size_file);
     clear_file_content(seeds_file);
+    clear_file_content(reference_genome_kmer_file);
 }
 
 void set_initial_data() {
     reference_genome_min_sketch_file    = "reference_genome_min_sketch_file.txt";
     reference_genome_bloom_filter_file  = "reference_genome_bloom_filter_file";
     reference_genome_size_file          = "reference_genome_size_file.txt";
+    reference_genome_kmer_file          = "reference_genome_kmer_file.txt";
     seeds_file                          = "seeds.txt";
     index_file                          = "index.txt";
 }
@@ -130,7 +134,7 @@ void read_bloom_filter(string ref_genome) {
 
 }
 
-void read_reference_genome(string reference_genome) {
+void read_reference_genome(string reference_genome, ofstream &min_sketch_file, ofstream &bloom_filter_file, ofstream &reference_genome_kmer) {
     vector<uint64_t> reference_genome_min_sketch(num_hash, LLONG_MAX);
     string kmer;
     int ref_size = reference_genome.size();
@@ -157,6 +161,7 @@ void read_reference_genome(string reference_genome) {
     for (int i = 0; i < ref_size - kmer_size; i++){
         kmer = reference_genome.substr(i, kmer_size);
 
+        reference_genome_kmer << kmer <<" ";
         //Adding kmers to min hash
         generate_sketch(kmer, reference_genome_min_sketch);
 
@@ -166,24 +171,22 @@ void read_reference_genome(string reference_genome) {
         }
     }
 
-    ofstream min_sketch_file(reference_genome_min_sketch_file, fstream::app);
+    reference_genome_kmer << "\n";
+
     for(int i = 0; i < num_hash; i++) {
         min_sketch_file << reference_genome_min_sketch[i] << " ";
     }
     min_sketch_file << "\n";
-    min_sketch_file.close();
 
-    ofstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary);
     bloom_filter_file.write((char*)&filter, sizeof(filter));
-    bloom_filter_file.close();
 }
 
 void read_dataset(string filename) {
     ofstream ref_file(reference_genome_size_file);
 
-    //Clear the content of genome_sketch_file if exist before writing new data
-    ofstream min_sketch_file_clear(reference_genome_min_sketch_file, fstream::trunc);
-    min_sketch_file_clear.close();
+    ofstream bloom_filter_file(reference_genome_bloom_filter_file, ios::binary | ios::app);
+    ofstream min_sketch_file(reference_genome_min_sketch_file, ios::app);
+    ofstream reference_genome_kmer(reference_genome_kmer_file, ios::app);
 
     ifstream file(filename);
     string sequence, line;
@@ -199,7 +202,10 @@ void read_dataset(string filename) {
 
             ref_file << to_string(line.size());
             ref_file << " ";
-            read_reference_genome(line);
+
+            read_reference_genome(line, min_sketch_file, bloom_filter_file, reference_genome_kmer);
+            bloom_filter_file.flush();
+            reference_genome_kmer.flush();
         }
     } else {
         cout << "Unable to open file\n";
@@ -207,6 +213,9 @@ void read_dataset(string filename) {
     }
     ref_file.close();
     file.close();
+    bloom_filter_file.close();
+    min_sketch_file.close();
+    reference_genome_kmer.close();
 }
 
 /*************************************************************/
@@ -235,8 +244,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    clear_initial_files();
     set_initial_data();
+    clear_initial_files();
     generate_seeds();
     read_dataset(reference_genome_file);
     set_intermediate_file();
