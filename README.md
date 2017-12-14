@@ -10,3 +10,9 @@ Implement MinHash and Containment Hash for long reads. Long reads are the result
 
 
 The goal of this project is to implement the Min Hash and Containment Hash approaches in C++ (one of the implementations is available in Python in [MinHashMetagenomics](https://github.com/dkoslicki/MinHashMetagenomics) repository on github) and using the simulators [SimulatedBiologicalData](https://github.com/dkoslicki/MinHashMetagenomics/blob/master/src/SimulatedBiologicalData.py) and/or [SimulatedBiologicalDataSmall](https://github.com/dkoslicki/MinHashMetagenomics/blob/master/src/SimulatedBiologicalDataSmall.py), compare the performance of these two approaches on the simulated data.
+
+#### References
+- https://www.biorxiv.org/content/biorxiv/early/2017/09/04/184150.full.pdf
+- https://rob-p.github.io/CSE549F17/lectures/Lec12.pdf
+- http://mccormickml.com/2015/06/12/minhash-tutorial-with-python-code/
+- https://github.com/dkoslicki/MinHashMetagenomics
