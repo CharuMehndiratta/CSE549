@@ -5,7 +5,8 @@
 #include <iomanip>
 #include <sstream>
 #include "MurmurHash3.h"
-// #include "utils.h"
+#include <string.h>
+#include <limits.h>
 #include "BloomFilter.hpp"
 
 using namespace std;

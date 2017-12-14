@@ -3,9 +3,10 @@
 #include <fstream>
 #include "MurmurHash3.h"
 #include "BloomFilter.hpp"
-#include <string>
+#include <string.h>
 #include <sstream>
 #include <unistd.h>
+#include <limits.h>
 
 using namespace std;
 
