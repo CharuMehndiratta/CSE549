@@ -12,9 +12,9 @@ Implement MinHash and Containment Hash for long reads. Long reads are the result
 The goal of this project is to implement the Min Hash and Containment Hash approaches in C++ (one of the implementations is available in Python in [MinHashMetagenomics](https://github.com/dkoslicki/MinHashMetagenomics) repository on github) and using the simulators [SimulatedBiologicalData](https://github.com/dkoslicki/MinHashMetagenomics/blob/master/src/SimulatedBiologicalData.py) and/or [SimulatedBiologicalDataSmall](https://github.com/dkoslicki/MinHashMetagenomics/blob/master/src/SimulatedBiologicalDataSmall.py), compare the performance of these two approaches on the simulated data.
 
 #### Command for building the Containment Hash and Minhash indices on the reference file
-'''
+```
 ./build_indices -r reference_genome.txt -f 0.001 -k 11 -h 200
-'''
+```
 - argument r stands for  reference file name
 - argument f stands for false positive value
 - argument k stands for kmer size
@@ -23,9 +23,9 @@ The goal of this project is to implement the Min Hash and Containment Hash appro
 It took us ~ *22* minutes to build Containment Hash and Minhash indices for *20* reference genomes.
 
 #### Command for calling the query on the long reads 
-'''
+```
 ./query -r long_read.txt -i index.txt
-'''
+```
 - argument r stands for  long read file name
 - argument i stands for index file name (that contains value for kmer size, false positive rate and number of hash functions)
 
