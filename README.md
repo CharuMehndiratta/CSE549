@@ -18,10 +18,14 @@ The goal of this project is to implement the Min Hash and Containment Hash appro
 - argument k stands for kmer size
 - argument h stands for number of hash functions
 
+It took us roughly 22 minutes to build Containment Hash and Minhash indices for 20 refernce genomes.
+
 #### Command for calling the query on the long reads 
 ./query -r long_read.txt -i index.txt
 - argument r stands for  long read file name
 - argument i stands for index file name (that contains value for kmer size, false positive rate and number of hash functions)
+
+It took us roughly 2 minutes to query Containment Hash and Minhash indices for 10K long reads.
 
 #### References
 - https://www.biorxiv.org/content/biorxiv/early/2017/09/04/184150.full.pdf
