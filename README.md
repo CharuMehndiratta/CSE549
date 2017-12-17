@@ -25,7 +25,9 @@ It took us roughly *22* minutes to build Containment Hash and Minhash indices fo
 - argument r stands for  long read file name
 - argument i stands for index file name (that contains value for kmer size, false positive rate and number of hash functions)
 
-It took us roughly *2* minutes to query Containment Hash and Minhash indices for *10K* long reads.(The final output for Minhash query is saved in file *min_hash_output.txt* and for Containment Hash query is saved in file *containment_hash_output.txt*)
+It took us roughly *2* minutes to query Containment Hash and Minhash indices for *10K* long reads.
+
+The final output for Minhash query is saved in file *min_hash_output.txt* and for Containment Hash query is saved in file *containment_hash_output.txt*
 
 #### References
 - https://www.biorxiv.org/content/biorxiv/early/2017/09/04/184150.full.pdf
