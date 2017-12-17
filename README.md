@@ -20,7 +20,7 @@ The goal of this project is to implement the Min Hash and Containment Hash appro
 - argument k stands for kmer size
 - argument h stands for number of hash functions
 
-It took us ~ *22* minutes to build Containment Hash and Minhash indices for *20* reference genomes.
+It took ~ *22* minutes to build Containment Hash and Minhash indices for *20* reference genomes.
 
 #### Command for calling the query on the long reads 
 ```
@@ -29,7 +29,7 @@ It took us ~ *22* minutes to build Containment Hash and Minhash indices for *20*
 - argument r stands for  long read file name
 - argument i stands for index file name (that contains value for kmer size, false positive rate and number of hash functions)
 
-It took us ~ *2* minutes to query Containment Hash and Minhash indices for *10K* long reads.
+It took ~ *2* minutes to query Containment Hash and Minhash indices for *10K* long reads.
 
 The final output for Minhash query is saved in file *min_hash_output.txt* and for Containment Hash query is saved in file *containment_hash_output.txt*
 
