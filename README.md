@@ -13,7 +13,7 @@ The goal of this project is to implement the Min Hash and Containment Hash appro
 
 #### Command for building the Containment Hash and Minhash indices on the reference file
 ```
-./build_indices -r reference_genome.txt -f 0.001 -k 11 -h 200
+./build_indices -r reference_genome.txt -f 0.001 -k 11 -h 50
 ```
 - argument r stands for  reference file name
 - argument f stands for false positive value
